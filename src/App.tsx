@@ -17,6 +17,7 @@ import { DueThisWeekToggle } from '@/components/DueThisWeekToggle';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { SettingsMenu } from '@/components/SettingsMenu';
 import KeyboardShortcutsModal from '@/components/KeyboardShortcutsModal';
+import { AppShell } from '@/components/AppShell';
 import styles from './App.module.css';
 
 export function App() {
@@ -175,7 +176,8 @@ export function App() {
   }
 
   return (
-    <div class={styles.appContainer}>
+    <AppShell>
+      <div class={styles.appContainer}>
       {/* Header */}
       <header class={styles.appHeader}>
         <h1 class={styles.appHeading}>Tasks</h1>
@@ -251,5 +253,6 @@ export function App() {
       {/* Live region for announcements */}
       <div class="sr-only" aria-live="polite" aria-atomic="true" />
     </div>
+    </AppShell>
   );
 }

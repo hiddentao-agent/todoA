@@ -27,15 +27,13 @@ export function TaskList({ todos, onMoveUp, onMoveDown }: TaskListProps) {
       if (!list) return;
       const target = list.children[targetIndex] as HTMLElement | undefined;
       if (!target) return;
-      const checkbox = target.querySelector(
-        'input[type="checkbox"]',
-      ) as HTMLElement | null;
+      const checkbox = target.querySelector('input[type="checkbox"]') as HTMLElement | null;
       checkbox?.focus();
     });
   };
 
   return (
-    <ul role="list" aria-label="Tasks" ref={listRef} class={styles.taskList}>
+    <ul role="listbox" aria-label="Tasks" ref={listRef} class={styles.taskList}>
       {todos.map((todo, index) => (
         <TaskItem
           key={todo.id}

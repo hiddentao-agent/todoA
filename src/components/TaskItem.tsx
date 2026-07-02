@@ -43,6 +43,29 @@ export default function TaskItem({
   const inputRef = useRef<HTMLInputElement>(null);
   const dateInputRef = useRef<HTMLInputElement>(null);
 
+  // Destructure stable store methods to satisfy exhaustive-deps
+  const { updateTodo, deleteTodo, toggleTodo } = store;
+
+  const sessionEditKey = todo.id !== undefined ? `todo-edit-${todo.id}` : null;
+
+  // Restore in-progress edit from sessionStorage on mount (spec §7.3 SW mid-edit safety net)
+  useEffect(() => {
+    if (!sessionEditKey || editing) return;
+    const saved = (() => {
+      try {
+        return sessionStorage.getItem(sessionEditKey);
+      } catch {
+        return null;
+      }
+    })();
+    if (saved !== null) {
+      setEditText(saved);
+      setEditing(true);
+      sessionStorage.removeItem(sessionEditKey);
+    }
+    // Run once on mount only
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Reset edit text when todo changes externally
   useEffect(() => {
     if (!editing) {
@@ -56,22 +79,46 @@ export default function TaskItem({
     if (isDisabled) return;
     setEditText(todo.text);
     setEditing(true);
-  }, [isDisabled, todo.text]);
+    // Save to sessionStorage as safety net for SW-triggered reload
+    if (sessionEditKey) {
+      try {
+        sessionStorage.setItem(sessionEditKey, todo.text);
+      } catch {
+        // sessionStorage unavailable
+      }
+    }
+  }, [isDisabled, todo.text, sessionEditKey]);
 
   const handleSaveEdit = useCallback(() => {
     const trimmed = editText.trim();
     if (trimmed && trimmed !== todo.text && todo.id !== undefined) {
-      store.updateTodo(todo.id, { text: trimmed }).catch(() => {
+      updateTodo(todo.id, { text: trimmed }).catch(() => {
         /* error handled by store */
       });
     }
     setEditing(false);
-  }, [editText, todo, store.updateTodo]);
+    // Clear sessionStorage safety net
+    if (sessionEditKey) {
+      try {
+        sessionStorage.removeItem(sessionEditKey);
+      } catch {
+        // sessionStorage unavailable
+      }
+    }
+  }, [editText, todo, updateTodo, sessionEditKey]);
 
   const cancelEdit = useCallback(() => {
     setEditing(false);
     setEditText(todo.text);
-  }, [todo.text]);
+    // Clear sessionStorage safety net
+    if (sessionEditKey) {
+      try {
+        sessionStorage.removeItem(sessionEditKey);
+      } catch {
+        // sessionStorage unavailable
+      }
+    }
+  }, [todo.text, sessionEditKey]);
 
   // Focus and select all text when entering edit mode
   useEffect(() => {
@@ -119,10 +166,10 @@ export default function TaskItem({
   const saveDate = useCallback(
     (newDate: string) => {
       if (todo.id === undefined) return;
-      store.updateTodo(todo.id, { dueDate: newDate || null }).catch(() => {});
+      updateTodo(todo.id, { dueDate: newDate || null }).catch(() => {});
       setEditingDate(false);
     },
-    [todo.id, store.updateTodo],
+    [todo.id, updateTodo],
   );
 
   const handleDateChange = useCallback(
@@ -157,22 +204,22 @@ export default function TaskItem({
 
   const clearDate = useCallback(() => {
     if (todo.id === undefined) return;
-    store.updateTodo(todo.id, { dueDate: null }).catch(() => {});
+    updateTodo(todo.id, { dueDate: null }).catch(() => {});
     setEditingDate(false);
-  }, [todo.id, store.updateTodo]);
+  }, [todo.id, updateTodo]);
 
   // ---- Actions ----
 
   const handleDelete = useCallback(() => {
     if (todo.id === undefined || isDisabled) return;
     const deletedId = todo.id;
-    store.deleteTodo(deletedId).catch(() => {
+    deleteTodo(deletedId).catch(() => {
       /* error handled by store */
     });
     if (onFocusAfterDelete) {
       onFocusAfterDelete(deletedId);
     }
-  }, [todo.id, isDisabled, store.deleteTodo, onFocusAfterDelete]);
+  }, [todo.id, isDisabled, deleteTodo, onFocusAfterDelete]);
 
   const handleMoveUp = useCallback(() => {
     if (todo.id !== undefined && onMoveUp) {
@@ -196,7 +243,7 @@ export default function TaskItem({
         case ' ':
           e.preventDefault();
           if (todo.id !== undefined) {
-            store.toggleTodo(todo.id).catch(() => {
+            toggleTodo(todo.id).catch(() => {
               /* error handled by store */
             });
           }
@@ -212,7 +259,7 @@ export default function TaskItem({
           break;
       }
     },
-    [isDisabled, editing, todo.id, store.toggleTodo, handleDelete, startEditing],
+    [isDisabled, editing, todo.id, toggleTodo, handleDelete, startEditing],
   );
 
   // ---- Derived ----
@@ -236,7 +283,8 @@ export default function TaskItem({
       class={styles.taskItem}
       tabIndex={0}
       onKeyDown={handleKeyDown}
-      role="listitem"
+      role="option"
+      aria-selected={todo.completed ? 'true' : 'false'}
       data-testid={`task-item-${todo.id}`}
     >
       {/* ---- Drag Handle ---- */}

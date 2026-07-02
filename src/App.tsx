@@ -129,7 +129,9 @@ export function App() {
 
         try {
           await importTodos(result.todos);
-          setToast({ message: `Imported ${result.todos.length} task${result.todos.length !== 1 ? 's' : ''}.` });
+          setToast({
+            message: `Imported ${result.todos.length} task${result.todos.length !== 1 ? 's' : ''}.`,
+          });
         } catch {
           setToast({ message: 'Import failed. Please try again.' });
         }
@@ -145,14 +147,28 @@ export function App() {
   // Storage unavailable error screen
   if (error) {
     return (
-      <div class={styles.appContainer} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100dvh' }}>
+      <div
+        class={styles.appContainer}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          minHeight: '100dvh',
+        }}
+      >
         <div style={{ textAlign: 'center', padding: 'var(--space-8)' }}>
           <div style={{ fontSize: '3rem', marginBottom: 'var(--space-4)' }}>⚠</div>
-          <h1 style={{ fontSize: 'var(--text-xl)', marginBottom: 'var(--space-3)', color: 'var(--color-text)' }}>
+          <h1
+            style={{
+              fontSize: 'var(--text-xl)',
+              marginBottom: 'var(--space-3)',
+              color: 'var(--color-text)',
+            }}
+          >
             Storage Unavailable
           </h1>
           <p style={{ color: 'var(--color-text-secondary)', maxWidth: '400px' }}>
-            Your browser's storage is unavailable. Please enable IndexedDB and reload.
+            Your browser&apos;s storage is unavailable. Please enable IndexedDB and reload.
           </p>
         </div>
       </div>
@@ -178,81 +194,79 @@ export function App() {
   return (
     <AppShell>
       <div class={styles.appContainer}>
-      {/* Header */}
-      <header class={styles.appHeader}>
-        <h1 class={styles.appHeading}>Tasks</h1>
-        <div class={styles.headerActions}>
-          <button
-            class={styles.headerBtn}
-            onClick={handleShortcutsOpen}
-            aria-label="Keyboard shortcuts"
-            title="Keyboard shortcuts (?)"
-            type="button"
-          >
-            ?
-          </button>
-          <ThemeToggle />
-          <SettingsMenu
-            onExport={handleExport}
-            onImport={handleImport}
-            onShortcutsOpen={handleShortcutsOpen}
+        {/* Header */}
+        <header class={styles.appHeader}>
+          <h1 class={styles.appHeading}>Tasks</h1>
+          <div class={styles.headerActions}>
+            <button
+              class={styles.headerBtn}
+              onClick={handleShortcutsOpen}
+              aria-label="Keyboard shortcuts"
+              title="Keyboard shortcuts (?)"
+              type="button"
+            >
+              ?
+            </button>
+            <ThemeToggle />
+            <SettingsMenu
+              onExport={handleExport}
+              onImport={handleImport}
+              onShortcutsOpen={handleShortcutsOpen}
+            />
+          </div>
+        </header>
+
+        {/* Add Task Form */}
+        <AddTaskForm />
+
+        {/* Toolbar */}
+        <div class={styles.toolbar}>
+          <SearchInput inputRef={searchInputRef} />
+          <div class={styles.toolbarControls}>
+            <FilterTabs filter={filter} onChange={setFilter} />
+            <DueThisWeekToggle active={dueThisWeek} onToggle={() => setDueThisWeek(!dueThisWeek)} />
+            <SortDropdown sortMode={sortMode} onChange={setSortMode} />
+          </div>
+        </div>
+
+        {/* Task Stats */}
+        <TaskStats filter={filter} />
+
+        {/* Task List or Empty State */}
+        {loading ? (
+          <div class={styles.skeletonList} aria-busy="true">
+            {[1, 2, 3].map((i) => (
+              <div key={i} class={styles.skeletonItem} />
+            ))}
+          </div>
+        ) : hasFilteredResults ? (
+          <TaskList todos={todos} onMoveUp={moveTodoUp} onMoveDown={moveTodoDown} />
+        ) : (
+          <EmptyState
+            variant={emptyVariant}
+            searchQuery={searchQuery}
+            onClearSearch={() => setSearchQuery('')}
           />
-        </div>
-      </header>
+        )}
 
-      {/* Add Task Form */}
-      <AddTaskForm searchInputRef={searchInputRef} />
+        {/* Clear Completed Button */}
+        {counts.completed > 0 && <ClearCompletedButton count={counts.completed} />}
 
-      {/* Toolbar */}
-      <div class={styles.toolbar}>
-        <SearchInput inputRef={searchInputRef} />
-        <div class={styles.toolbarControls}>
-          <FilterTabs filter={filter} onChange={setFilter} />
-          <DueThisWeekToggle active={dueThisWeek} onToggle={() => setDueThisWeek(!dueThisWeek)} />
-          <SortDropdown sortMode={sortMode} onChange={setSortMode} />
-        </div>
+        {/* Keyboard Shortcuts Modal */}
+        {shortcutsOpen && <KeyboardShortcutsModal onClose={() => setShortcutsOpen(false)} />}
+
+        {/* Toast */}
+        {toast && (
+          <Toast
+            message={toast.message}
+            onUndo={toast.onUndo || (() => setToast(null))}
+            onDismiss={() => setToast(null)}
+          />
+        )}
+
+        {/* Live region for announcements */}
+        <div class="sr-only" aria-live="polite" aria-atomic="true" />
       </div>
-
-      {/* Task Stats */}
-      <TaskStats filter={filter} />
-
-      {/* Task List or Empty State */}
-      {loading ? (
-        <div class={styles.skeletonList} aria-busy="true">
-          {[1, 2, 3].map((i) => (
-            <div key={i} class={styles.skeletonItem} />
-          ))}
-        </div>
-      ) : hasFilteredResults ? (
-        <TaskList
-          todos={todos}
-          onMoveUp={moveTodoUp}
-          onMoveDown={moveTodoDown}
-        />
-      ) : (
-        <EmptyState variant={emptyVariant} searchQuery={searchQuery} onClearSearch={() => setSearchQuery('')} />
-      )}
-
-      {/* Clear Completed Button */}
-      {counts.completed > 0 && <ClearCompletedButton count={counts.completed} />}
-
-      {/* Keyboard Shortcuts Modal */}
-      {shortcutsOpen && (
-        <KeyboardShortcutsModal onClose={() => setShortcutsOpen(false)} />
-      )}
-
-      {/* Toast */}
-      {toast && (
-        <Toast
-          message={toast.message}
-          onUndo={toast.onUndo || (() => setToast(null))}
-          onDismiss={() => setToast(null)}
-        />
-      )}
-
-      {/* Live region for announcements */}
-      <div class="sr-only" aria-live="polite" aria-atomic="true" />
-    </div>
     </AppShell>
   );
 }

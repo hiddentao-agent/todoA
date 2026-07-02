@@ -14,7 +14,10 @@ describe('FilterTabs', () => {
     render(<FilterTabs filter="active" onChange={vi.fn()} />);
     expect(screen.getByRole('tab', { name: 'All' })).toHaveAttribute('aria-selected', 'false');
     expect(screen.getByRole('tab', { name: 'Active' })).toHaveAttribute('aria-selected', 'true');
-    expect(screen.getByRole('tab', { name: 'Completed' })).toHaveAttribute('aria-selected', 'false');
+    expect(screen.getByRole('tab', { name: 'Completed' })).toHaveAttribute(
+      'aria-selected',
+      'false',
+    );
   });
 
   it('calls onChange with the clicked tab value', () => {

@@ -20,7 +20,8 @@
   font-weight: var(--font-medium);
   line-height: var(--leading-sm);
   cursor: pointer;
-  transition: background-color var(--transition-fast),
+  transition:
+    background-color var(--transition-fast),
     color var(--transition-fast);
   min-height: var(--target-touch);
 }

@@ -1,4 +1,12 @@
 <!doctype html>
+<!--
+  data-theme="system" is the CSP-safe default.
+  JS applies the user's stored preference (todo_theme) after mount.
+  Trade-off: a brief flash of wrong theme (FOUC) is possible if the
+  stored preference differs from the OS default. This is accepted in
+  favour of CSP compliance — an inline script to read localStorage
+  before paint would require 'unsafe-inline' in script-src.
+-->
 <html lang="en" data-theme="system">
   <head>
     <meta charset="UTF-8" />

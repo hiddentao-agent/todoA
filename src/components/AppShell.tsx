@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from 'preact/hooks';
+import { useRegisterSW } from 'virtual:pwa-register/preact';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { OfflineBanner } from '@/components/OfflineBanner';
 import { UpdatePrompt } from '@/components/UpdatePrompt';
@@ -11,31 +12,22 @@ interface AppShellProps {
 export function AppShell({ children }: AppShellProps) {
   const online = useOnlineStatus();
   const [offlineDismissed, setOfflineDismissed] = useState(false);
-  const [updateAvailable, setUpdateAvailable] = useState(false);
 
-  // Listen for service worker updates
-  useEffect(() => {
-    // If Workbox is available via vite-plugin-pwa, listen for updates
-    if ('serviceWorker' in navigator) {
-      // The workbox-window instance is registered by vite-plugin-pwa
-      // We listen for the custom event it dispatches
-      const handleUpdate = () => setUpdateAvailable(true);
-      window.addEventListener('sw-update-available', handleUpdate);
-      return () => window.removeEventListener('sw-update-available', handleUpdate);
-    }
-  }, []);
+  // Use vite-plugin-pwa's useRegisterSW hook for proper SW update flow.
+  // needRefresh is a tuple [boolean, StateUpdater<boolean>] where
+  // StateUpdater is the value-or-updater type; we use index access to
+  // avoid destructuring type issues with the union type.
+  const { needRefresh, updateServiceWorker } = useRegisterSW();
+  const updateAvailable = needRefresh[0];
+  const dismissUpdate = needRefresh[1] as unknown as () => void;
 
   const handleRefresh = useCallback(() => {
-    // Post message to waiting service worker to skip waiting
-    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-      navigator.serviceWorker.controller.postMessage({ type: 'SKIP_WAITING' });
-    }
-    window.location.reload();
-  }, []);
+    updateServiceWorker(true);
+  }, [updateServiceWorker]);
 
   const handleDismissUpdate = useCallback(() => {
-    setUpdateAvailable(false);
-  }, []);
+    dismissUpdate();
+  }, [dismissUpdate]);
 
   const handleDismissOffline = useCallback(() => {
     setOfflineDismissed(true);
@@ -50,9 +42,7 @@ export function AppShell({ children }: AppShellProps) {
 
   return (
     <div>
-      {!online && !offlineDismissed && (
-        <OfflineBanner onDismiss={handleDismissOffline} />
-      )}
+      {!online && !offlineDismissed && <OfflineBanner onDismiss={handleDismissOffline} />}
       {updateAvailable && (
         <UpdatePrompt onRefresh={handleRefresh} onDismiss={handleDismissUpdate} />
       )}

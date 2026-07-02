@@ -9,7 +9,8 @@
   border-radius: var(--radius-full);
   font-family: inherit;
   cursor: pointer;
-  transition: background-color var(--transition-fast),
+  transition:
+    background-color var(--transition-fast),
     color var(--transition-fast),
     border-color var(--transition-fast);
   line-height: var(--leading-sm);

@@ -23,7 +23,8 @@
   line-height: var(--leading-sm);
   border: 1px solid transparent;
   cursor: pointer;
-  transition: background-color var(--transition-fast),
+  transition:
+    background-color var(--transition-fast),
     color var(--transition-fast),
     border-color var(--transition-fast);
   min-height: var(--target-touch);

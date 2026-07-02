@@ -59,7 +59,9 @@
   cursor: pointer;
   line-height: 1;
   padding: 0;
-  transition: background var(--transition-fast), color var(--transition-fast);
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast);
 }
 
 .closeButton:hover {

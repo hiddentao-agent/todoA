@@ -18,23 +18,14 @@ export function useKeyboard(actions: KeyboardActions): void {
       const isInput = tag === 'input' || tag === 'textarea' || target.isContentEditable;
 
       // / — focus search (only when not typing)
-      if (
-        e.key === '/' &&
-        !isInput &&
-        actions.onSearchFocus
-      ) {
+      if (e.key === '/' && !isInput && actions.onSearchFocus) {
         e.preventDefault();
         actions.onSearchFocus();
         return;
       }
 
       // ? — open keyboard shortcuts modal (only when not typing)
-      if (
-        e.key === '?' &&
-        !e.shiftKey &&
-        !isInput &&
-        actions.onShortcutsOpen
-      ) {
+      if (e.key === '?' && !e.shiftKey && !isInput && actions.onShortcutsOpen) {
         e.preventDefault();
         actions.onShortcutsOpen();
         return;

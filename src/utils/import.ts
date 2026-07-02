@@ -47,9 +47,7 @@ function isValidDateString(s: string): boolean {
  * Returns ImportSuccess with sanitized todos, or ImportError on failure.
  * All checks run before touching existing data.
  */
-export function processImportFile(
-  rawText: string,
-): ImportSuccess | ImportError {
+export function processImportFile(rawText: string): ImportSuccess | ImportError {
   // Gate 2: Parse JSON
   let parsed: unknown;
   try {
@@ -106,9 +104,8 @@ export function processImportFile(
     }
 
     // Validate completed
-    const completed = typeof record.completed === 'boolean'
-      ? record.completed
-      : Boolean(record.completed);
+    const completed =
+      typeof record.completed === 'boolean' ? record.completed : Boolean(record.completed);
 
     // Validate order
     let order: number;

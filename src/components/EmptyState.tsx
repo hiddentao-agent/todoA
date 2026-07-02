@@ -34,9 +34,7 @@ export function EmptyState({ variant, searchQuery, onClearSearch }: EmptyStatePr
 
       {variant === 'noSearchResults' && (
         <>
-          <p class={styles.title}>
-            No tasks match &lsquo;{searchQuery}&rsquo;
-          </p>
+          <p class={styles.title}>No tasks match &lsquo;{searchQuery}&rsquo;</p>
           {onClearSearch && (
             <button class={styles.clearButton} onClick={onClearSearch} type="button">
               Clear search

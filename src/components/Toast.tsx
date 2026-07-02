@@ -26,12 +26,7 @@ export function Toast({ message, onUndo, onDismiss }: ToastProps) {
         Undo
       </button>
 
-      <button
-        class={styles.dismissButton}
-        onClick={onDismiss}
-        type="button"
-        aria-label="Dismiss"
-      >
+      <button class={styles.dismissButton} onClick={onDismiss} type="button" aria-label="Dismiss">
         &#x2715;
       </button>
     </div>

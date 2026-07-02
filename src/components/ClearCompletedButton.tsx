@@ -13,12 +13,7 @@ export function ClearCompletedButton({ count }: ClearCompletedButtonProps) {
 
   return (
     <div class={styles.wrapper}>
-      <button
-        class={styles.button}
-        onClick={clearCompleted}
-        disabled={importing}
-        type="button"
-      >
+      <button class={styles.button} onClick={clearCompleted} disabled={importing} type="button">
         Clear completed ({count})
       </button>
     </div>

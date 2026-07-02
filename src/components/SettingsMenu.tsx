@@ -9,6 +9,7 @@ interface SettingsMenuProps {
 
 export function SettingsMenu({ onExport, onImport, onShortcutsOpen }: SettingsMenuProps) {
   const [open, setOpen] = useState(false);
+  const [showAbout, setShowAbout] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -30,14 +31,10 @@ export function SettingsMenu({ onExport, onImport, onShortcutsOpen }: SettingsMe
 
       if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
         e.preventDefault();
-        const items = menuRef.current?.querySelectorAll<HTMLButtonElement>(
-          '[role="menuitem"]',
-        );
+        const items = menuRef.current?.querySelectorAll<HTMLButtonElement>('[role="menuitem"]');
         if (!items || items.length === 0) return;
 
-        const currentIndex = Array.from(items).findIndex(
-          (item) => document.activeElement === item,
-        );
+        const currentIndex = Array.from(items).findIndex((item) => document.activeElement === item);
         let nextIndex: number;
         if (e.key === 'ArrowDown') {
           nextIndex = currentIndex < items.length - 1 ? currentIndex + 1 : 0;
@@ -106,7 +103,7 @@ export function SettingsMenu({ onExport, onImport, onShortcutsOpen }: SettingsMe
   }, [onShortcutsOpen, close]);
 
   const handleAbout = useCallback(() => {
-    alert('Todo App — A simple task manager built with Preact.');
+    setShowAbout(true);
     close();
   }, [close]);
 
@@ -127,53 +124,80 @@ export function SettingsMenu({ onExport, onImport, onShortcutsOpen }: SettingsMe
       {open && (
         <div ref={menuRef} class={styles.dropdown} role="menu">
           {/* Export */}
-          <button
-            class={styles.menuItem}
-            role="menuitem"
-            onClick={handleExport}
-            type="button"
-          >
-            <span class={styles.menuIcon} aria-hidden="true">&darr;</span>
+          <button class={styles.menuItem} role="menuitem" onClick={handleExport} type="button">
+            <span class={styles.menuIcon} aria-hidden="true">
+              &darr;
+            </span>
             Export
           </button>
-          <div class={styles.privacyNote}>
-            Exported data is saved as an unencrypted JSON file.
-          </div>
+          <div class={styles.privacyNote}>Exported data is saved as an unencrypted JSON file.</div>
 
           {/* Import */}
-          <button
-            class={styles.menuItem}
-            role="menuitem"
-            onClick={handleImportClick}
-            type="button"
-          >
-            <span class={styles.menuIcon} aria-hidden="true">&uarr;</span>
+          <button class={styles.menuItem} role="menuitem" onClick={handleImportClick} type="button">
+            <span class={styles.menuIcon} aria-hidden="true">
+              &uarr;
+            </span>
             Import
           </button>
 
           {/* Keyboard Shortcuts (conditional) */}
           {onShortcutsOpen && (
-            <button
-              class={styles.menuItem}
-              role="menuitem"
-              onClick={handleShortcuts}
-              type="button"
-            >
-              <span class={styles.menuIcon} aria-hidden="true">&#9000;</span>
+            <button class={styles.menuItem} role="menuitem" onClick={handleShortcuts} type="button">
+              <span class={styles.menuIcon} aria-hidden="true">
+                &#9000;
+              </span>
               Keyboard Shortcuts
             </button>
           )}
 
           {/* About */}
-          <button
-            class={styles.menuItem}
-            role="menuitem"
-            onClick={handleAbout}
-            type="button"
-          >
-            <span class={styles.menuIcon} aria-hidden="true">&#8505;</span>
+          <button class={styles.menuItem} role="menuitem" onClick={handleAbout} type="button">
+            <span class={styles.menuIcon} aria-hidden="true">
+              &#8505;
+            </span>
             About
           </button>
+        </div>
+      )}
+
+      {/* About dialog */}
+      {showAbout && (
+        <div
+          class={styles.backdrop}
+          onClick={() => setShowAbout(false)}
+          onKeyDown={(e: KeyboardEvent) => {
+            if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              setShowAbout(false);
+            }
+          }}
+          role="button"
+          tabIndex={-1}
+          aria-label="Close about dialog"
+        >
+          {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
+          <div
+            class={styles.aboutDialog}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="about-title"
+            onClick={(e: MouseEvent) => e.stopPropagation()}
+            onKeyDown={(e: KeyboardEvent) => e.stopPropagation()}
+          >
+            <h2 id="about-title" class={styles.aboutTitle}>
+              About
+            </h2>
+            <p class={styles.aboutText}>Todo App — A simple task manager built with Preact.</p>
+            <div class={styles.aboutVersion}>Version 1.0.0</div>
+            <button
+              class={styles.aboutClose}
+              onClick={() => setShowAbout(false)}
+              type="button"
+              aria-label="Close"
+            >
+              Close
+            </button>
+          </div>
         </div>
       )}
 

@@ -89,9 +89,7 @@ describe('processImportFile', () => {
   });
 
   it('rejects empty text', () => {
-    const json = JSON.stringify([
-      { text: '   ', completed: false, order: 0, createdAt: 0 },
-    ]);
+    const json = JSON.stringify([{ text: '   ', completed: false, order: 0, createdAt: 0 }]);
     const result = processImportFile(json);
     expect('message' in result).toBe(true);
   });
@@ -122,9 +120,7 @@ describe('processImportFile', () => {
   });
 
   it('applies defaults for missing optional fields', () => {
-    const json = JSON.stringify([
-      { text: 'Only text', completed: false, order: 1000 },
-    ]);
+    const json = JSON.stringify([{ text: 'Only text', completed: false, order: 1000 }]);
     const result = processImportFile(json);
     if ('todos' in result) {
       expect(result.todos[0].dueDate).toBeNull();

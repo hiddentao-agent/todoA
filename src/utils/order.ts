@@ -14,7 +14,7 @@ export function calculateInsertOrder(
   allTodos: Todo[],
 ): { order: number; reindexedTodos?: Todo[] } {
   const prevOrder = prev?.order ?? 0;
-  const nextOrder = next?.order ?? (prevOrder + ORDER_STEP);
+  const nextOrder = next?.order ?? prevOrder + ORDER_STEP;
   const mid = (prevOrder + nextOrder) / 2;
 
   // If precision is still available, use the midpoint.

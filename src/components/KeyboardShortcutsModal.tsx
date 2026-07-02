@@ -89,8 +89,22 @@ export default function KeyboardShortcutsModal({ onClose }: KeyboardShortcutsMod
     }
   }
 
+  function handleBackdropKeyDown(e: KeyboardEvent) {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onClose();
+    }
+  }
+
   return (
-    <div class={styles.backdrop} onClick={handleBackdropClick}>
+    <div
+      class={styles.backdrop}
+      onClick={handleBackdropClick}
+      onKeyDown={handleBackdropKeyDown}
+      role="button"
+      tabIndex={-1}
+      aria-label="Close keyboard shortcuts"
+    >
       <div
         ref={dialogRef}
         class={styles.dialog}
@@ -104,12 +118,7 @@ export default function KeyboardShortcutsModal({ onClose }: KeyboardShortcutsMod
           <h2 id="modal-title" class={styles.title}>
             Keyboard Shortcuts
           </h2>
-          <button
-            class={styles.closeButton}
-            onClick={onClose}
-            type="button"
-            aria-label="Close"
-          >
+          <button class={styles.closeButton} onClick={onClose} type="button" aria-label="Close">
             &#x2715;
           </button>
         </div>
@@ -123,8 +132,8 @@ export default function KeyboardShortcutsModal({ onClose }: KeyboardShortcutsMod
             </tr>
           </thead>
           <tbody>
-            {SHORTCUTS.map((shortcut, index) => (
-              <tr key={index} class={styles.tableRow}>
+            {SHORTCUTS.map((shortcut) => (
+              <tr key={shortcut.keys.join('+')} class={styles.tableRow}>
                 <td class={styles.tableCell}>
                   {shortcut.keys.map((key, ki) => (
                     <span key={ki}>

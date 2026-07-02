@@ -15,9 +15,11 @@ vi.mock('@/db', () => ({
   db: {
     todos: {
       orderBy: vi.fn().mockReturnValue({
-        toArray: vi.fn().mockImplementation(async () =>
-          Object.values(mockDbStore).sort((a, b) => a.order - b.order),
-        ),
+        toArray: vi
+          .fn()
+          .mockImplementation(async () =>
+            Object.values(mockDbStore).sort((a, b) => a.order - b.order),
+          ),
       }),
       add: vi.fn().mockImplementation(async (todo: Omit<Todo, 'id'>) => {
         const id = mockNextId++;
@@ -253,8 +255,22 @@ describe('selectFilteredTodos', () => {
     const store = makeStore({
       sortMode: 'dueDateAsc',
       todos: [
-        { id: 1, text: 'Later', completed: false, order: 1000, dueDate: '2026-12-25', createdAt: 0 },
-        { id: 2, text: 'Earlier', completed: false, order: 2000, dueDate: '2026-01-01', createdAt: 0 },
+        {
+          id: 1,
+          text: 'Later',
+          completed: false,
+          order: 1000,
+          dueDate: '2026-12-25',
+          createdAt: 0,
+        },
+        {
+          id: 2,
+          text: 'Earlier',
+          completed: false,
+          order: 2000,
+          dueDate: '2026-01-01',
+          createdAt: 0,
+        },
         { id: 3, text: 'No date', completed: false, order: 3000, dueDate: null, createdAt: 0 },
       ],
     });
@@ -268,7 +284,14 @@ describe('selectFilteredTodos', () => {
     const store = makeStore({
       sortMode: 'dueDateDesc',
       todos: [
-        { id: 1, text: 'Early', completed: false, order: 1000, dueDate: '2026-01-01', createdAt: 0 },
+        {
+          id: 1,
+          text: 'Early',
+          completed: false,
+          order: 1000,
+          dueDate: '2026-01-01',
+          createdAt: 0,
+        },
         { id: 2, text: 'Late', completed: false, order: 2000, dueDate: '2026-12-25', createdAt: 0 },
       ],
     });

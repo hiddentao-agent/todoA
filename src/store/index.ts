@@ -38,7 +38,7 @@ export interface TodoStore {
 
   // Actions
   loadTodos: () => Promise<void>;
-  addTodo: (text: string, dueDate?: string) => Promise<void>;
+  addTodo: (text: string, dueDate?: string) => Promise<number | undefined>;
   updateTodo: (id: number, updates: Partial<Todo>) => Promise<void>;
   deleteTodo: (id: number) => Promise<void>;
   toggleTodo: (id: number) => Promise<void>;
@@ -115,17 +115,14 @@ export const useTodoStore = create<TodoStore>((set, get) => ({
     } catch (err) {
       set({
         loading: false,
-        error:
-          err instanceof Error
-            ? err.message
-            : 'Failed to load tasks',
+        error: err instanceof Error ? err.message : 'Failed to load tasks',
       });
     }
   },
 
   addTodo: async (text, dueDate) => {
     const trimmed = text.trim();
-    if (!trimmed || trimmed.length > 1000) return;
+    if (!trimmed || trimmed.length > 1000) return undefined;
 
     const state = get();
     const order = getNextOrder(state.todos);
@@ -138,10 +135,18 @@ export const useTodoStore = create<TodoStore>((set, get) => ({
       createdAt: Date.now(),
     };
 
-    await db.todos.add(todo as Todo);
-    const todos = await db.todos.orderBy('order').toArray();
-    set({ todos });
-    buildSearchIndex(todos);
+    try {
+      const newId = await db.todos.add(todo as Todo);
+      const todos = await db.todos.orderBy('order').toArray();
+      set({ todos, error: null });
+      buildSearchIndex(todos);
+      return newId as number;
+    } catch (err) {
+      set({
+        error: err instanceof Error ? err.message : 'Failed to add task',
+      });
+      return undefined;
+    }
   },
 
   updateTodo: async (id, updates) => {
@@ -152,26 +157,44 @@ export const useTodoStore = create<TodoStore>((set, get) => ({
       updates.text = trimmed;
     }
 
-    await db.todos.update(id, updates);
-    const todos = await db.todos.orderBy('order').toArray();
-    set({ todos });
-    buildSearchIndex(todos);
+    try {
+      await db.todos.update(id, updates);
+      const todos = await db.todos.orderBy('order').toArray();
+      set({ todos, error: null });
+      buildSearchIndex(todos);
+    } catch (err) {
+      set({
+        error: err instanceof Error ? err.message : 'Failed to update task',
+      });
+    }
   },
 
   deleteTodo: async (id) => {
-    await db.todos.delete(id);
-    const todos = await db.todos.orderBy('order').toArray();
-    set({ todos });
-    buildSearchIndex(todos);
+    try {
+      await db.todos.delete(id);
+      const todos = await db.todos.orderBy('order').toArray();
+      set({ todos, error: null });
+      buildSearchIndex(todos);
+    } catch (err) {
+      set({
+        error: err instanceof Error ? err.message : 'Failed to delete task',
+      });
+    }
   },
 
   toggleTodo: async (id) => {
     const todo = get().todos.find((t) => t.id === id);
     if (!todo) return;
-    await db.todos.update(id, { completed: !todo.completed });
-    const todos = await db.todos.orderBy('order').toArray();
-    set({ todos });
-    buildSearchIndex(todos);
+    try {
+      await db.todos.update(id, { completed: !todo.completed });
+      const todos = await db.todos.orderBy('order').toArray();
+      set({ todos, error: null });
+      buildSearchIndex(todos);
+    } catch (err) {
+      set({
+        error: err instanceof Error ? err.message : 'Failed to toggle task',
+      });
+    }
   },
 
   clearCompleted: async () => {
@@ -184,10 +207,16 @@ export const useTodoStore = create<TodoStore>((set, get) => ({
       expiresAt: Date.now() + 10_000,
     };
 
-    await db.todos.bulkDelete(completed.map((t) => t.id!));
-    const todos = await db.todos.orderBy('order').toArray();
-    set({ todos, undoBuffer });
-    buildSearchIndex(todos);
+    try {
+      await db.todos.bulkDelete(completed.map((t) => t.id!));
+      const todos = await db.todos.orderBy('order').toArray();
+      set({ todos, undoBuffer, error: null });
+      buildSearchIndex(todos);
+    } catch (err) {
+      set({
+        error: err instanceof Error ? err.message : 'Failed to clear completed tasks',
+      });
+    }
   },
 
   undoClearCompleted: async () => {
@@ -200,16 +229,28 @@ export const useTodoStore = create<TodoStore>((set, get) => ({
     const { tasks } = state.undoBuffer;
     // Strip ids so Dexie assigns new ones
     const restored = tasks.map(({ id: _id, ...rest }) => rest as Todo);
-    await db.todos.bulkAdd(restored);
-    const todos = await db.todos.orderBy('order').toArray();
-    set({ todos, undoBuffer: null });
-    buildSearchIndex(todos);
+    try {
+      await db.todos.bulkAdd(restored);
+      const todos = await db.todos.orderBy('order').toArray();
+      set({ todos, undoBuffer: null, error: null });
+      buildSearchIndex(todos);
+    } catch (err) {
+      set({
+        error: err instanceof Error ? err.message : 'Failed to undo clear',
+      });
+    }
   },
 
   reorderTodo: async (id, newOrder) => {
-    await db.todos.update(id, { order: newOrder });
-    const todos = await db.todos.orderBy('order').toArray();
-    set({ todos });
+    try {
+      await db.todos.update(id, { order: newOrder });
+      const todos = await db.todos.orderBy('order').toArray();
+      set({ todos, error: null });
+    } catch (err) {
+      set({
+        error: err instanceof Error ? err.message : 'Failed to reorder task',
+      });
+    }
   },
 
   moveTodoUp: async (id: number) => {
@@ -221,13 +262,19 @@ export const useTodoStore = create<TodoStore>((set, get) => ({
     const prev = sorted[idx - 1];
     const current = sorted[idx];
     // Swap orders
-    await db.todos.update(prev.id!, { order: current.order });
-    await db.todos.update(current.id!, { order: prev.order });
-    const todos = await db.todos.orderBy('order').toArray();
-    set({ todos });
-    // Switch back to manual sort when manually reordering
-    if (state.sortMode !== 'manual') {
-      get().setSortMode('manual');
+    try {
+      await db.todos.update(prev.id!, { order: current.order });
+      await db.todos.update(current.id!, { order: prev.order });
+      const todos = await db.todos.orderBy('order').toArray();
+      set({ todos, error: null });
+      // Switch back to manual sort when manually reordering
+      if (state.sortMode !== 'manual') {
+        get().setSortMode('manual');
+      }
+    } catch (err) {
+      set({
+        error: err instanceof Error ? err.message : 'Failed to move task up',
+      });
     }
   },
 
@@ -240,13 +287,19 @@ export const useTodoStore = create<TodoStore>((set, get) => ({
     const next = sorted[idx + 1];
     const current = sorted[idx];
     // Swap orders
-    await db.todos.update(next.id!, { order: current.order });
-    await db.todos.update(current.id!, { order: next.order });
-    const todos = await db.todos.orderBy('order').toArray();
-    set({ todos });
-    // Switch back to manual sort when manually reordering
-    if (state.sortMode !== 'manual') {
-      get().setSortMode('manual');
+    try {
+      await db.todos.update(next.id!, { order: current.order });
+      await db.todos.update(current.id!, { order: next.order });
+      const todos = await db.todos.orderBy('order').toArray();
+      set({ todos, error: null });
+      // Switch back to manual sort when manually reordering
+      if (state.sortMode !== 'manual') {
+        get().setSortMode('manual');
+      }
+    } catch (err) {
+      set({
+        error: err instanceof Error ? err.message : 'Failed to move task down',
+      });
     }
   },
 

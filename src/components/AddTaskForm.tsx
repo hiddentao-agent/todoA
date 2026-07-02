@@ -1,16 +1,15 @@
 import { useTodoStore } from '@/store';
-import { useRef, useState } from 'preact/hooks';
+import { useRef, useState, useEffect } from 'preact/hooks';
 import styles from './AddTaskForm.module.css';
 
 interface AddTaskFormProps {
-  searchInputRef?: { current: HTMLInputElement | null };
   disabled?: boolean;
 }
 
 const MAX_LENGTH = 1000;
 const CHAR_WARN_THRESHOLD = 900;
 
-export function AddTaskForm({ searchInputRef, disabled }: AddTaskFormProps) {
+export function AddTaskForm({ disabled }: AddTaskFormProps) {
   const addTodo = useTodoStore((s) => s.addTodo);
   const importing = useTodoStore((s) => s.importing);
 
@@ -21,6 +20,11 @@ export function AddTaskForm({ searchInputRef, disabled }: AddTaskFormProps) {
 
   const isDisabled = disabled ?? importing;
   const charsRemaining = MAX_LENGTH - text.length;
+
+  // Auto-focus the task input on mount (replaces autoFocus attribute for a11y)
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
 
   const handleInput = (e: Event) => {
     const value = (e.target as HTMLInputElement).value;
@@ -47,16 +51,25 @@ export function AddTaskForm({ searchInputRef, disabled }: AddTaskFormProps) {
 
     setValidationError(null);
 
-    await addTodo(trimmed, dueDate || undefined);
+    const newId = await addTodo(trimmed, dueDate || undefined);
     setText('');
     setDueDate('');
 
-    // Focus moves to search input when provided
-    searchInputRef?.current?.focus();
+    // Focus moves to the new task's checkbox per spec AC1.2
+    if (newId !== undefined) {
+      requestAnimationFrame(() => {
+        const el = document.querySelector(
+          `[data-testid="task-item-${newId}"] input[type="checkbox"]`,
+        );
+        if (el instanceof HTMLElement) {
+          el.focus();
+        }
+      });
+    }
   };
 
   return (
-    <form class={styles.form} onSubmit={handleSubmit} aria-disabled={isDisabled}>
+    <form class={styles.form} onSubmit={handleSubmit}>
       <div class={styles.inputWrapper}>
         <input
           ref={inputRef}
@@ -69,7 +82,6 @@ export function AddTaskForm({ searchInputRef, disabled }: AddTaskFormProps) {
           value={text}
           onInput={handleInput}
           disabled={isDisabled}
-          autoFocus
         />
         {validationError && (
           <small id="task-validation-error" class={styles.validationError} role="alert">
@@ -91,11 +103,7 @@ export function AddTaskForm({ searchInputRef, disabled }: AddTaskFormProps) {
           onInput={(e: Event) => setDueDate((e.target as HTMLInputElement).value)}
           disabled={isDisabled}
         />
-        <button
-          type="submit"
-          class={styles.addButton}
-          disabled={isDisabled}
-        >
+        <button type="submit" class={styles.addButton} disabled={isDisabled}>
           Add
         </button>
       </div>

@@ -93,7 +93,10 @@ test.describe('Task CRUD', () => {
     await checkbox.click();
 
     // Clear completed
-    await page.getByRole('button', { name: /Clear completed/ }).first().click();
+    await page
+      .getByRole('button', { name: /Clear completed/ })
+      .first()
+      .click();
 
     // Toast should appear
     await expect(page.getByText(/completed task/)).toBeVisible();

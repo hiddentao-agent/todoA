@@ -8,9 +8,6 @@ export function buildSearchIndex(todos: Todo[]): void {
   index = lunr(function () {
     this.ref('id');
     this.field('text');
-    // Boost exact matches
-    this.pipeline.remove(lunr.stemmer);
-    this.searchPipeline.remove(lunr.stemmer);
 
     for (const todo of todos) {
       if (todo.id !== undefined) {
@@ -37,9 +34,4 @@ export function search(query: string): Array<{ ref: string; score: number }> {
       .join(' '),
   );
   return results.map((r) => ({ ref: r.ref, score: r.score }));
-}
-
-/** Clear the search index. */
-export function clearSearchIndex(): void {
-  index = null;
 }

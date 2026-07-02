@@ -17,7 +17,7 @@ export function OfflineBanner({ onDismiss }: OfflineBannerProps) {
 
   return (
     <div class={styles.banner} role="alert">
-      <span class={styles.text}>⚠ You're offline — changes saved locally.</span>
+      <span class={styles.text}>⚠ You&apos;re offline — changes saved locally.</span>
       <button
         class={styles.dismissBtn}
         onClick={onDismiss}

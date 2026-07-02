@@ -7,17 +7,27 @@ import { TaskStats } from '@/components/TaskStats';
 import { ClearCompletedButton } from '@/components/ClearCompletedButton';
 import { Toast } from '@/components/Toast';
 import { EmptyState } from '@/components/EmptyState';
+import { FilterTabs } from '@/components/FilterTabs';
+import { SearchInput } from '@/components/SearchInput';
+import { SortDropdown } from '@/components/SortDropdown';
+import { DueThisWeekToggle } from '@/components/DueThisWeekToggle';
+import styles from './App.module.css';
 
 export function App() {
   const loadTodos = useTodoStore((s) => s.loadTodos);
   const loading = useTodoStore((s) => s.loading);
   const error = useTodoStore((s) => s.error);
   const filter = useTodoStore((s) => s.filter);
+  const sortMode = useTodoStore((s) => s.sortMode);
   const searchQuery = useTodoStore((s) => s.searchQuery);
+  const dueThisWeek = useTodoStore((s) => s.dueThisWeek);
   const theme = useTodoStore((s) => s.theme);
   const todos = useTodoStore(selectFilteredTodos);
   const counts = useTodoStore(selectTaskCounts);
+  const setFilter = useTodoStore((s) => s.setFilter);
+  const setSortMode = useTodoStore((s) => s.setSortMode);
   const setSearchQuery = useTodoStore((s) => s.setSearchQuery);
+  const setDueThisWeek = useTodoStore((s) => s.setDueThisWeek);
 
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -68,7 +78,7 @@ export function App() {
   // Storage unavailable error screen
   if (error) {
     return (
-      <div class="app-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100dvh' }}>
+      <div class={styles.appContainer} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100dvh' }}>
         <div style={{ textAlign: 'center', padding: 'var(--space-8)' }}>
           <div style={{ fontSize: '3rem', marginBottom: 'var(--space-4)' }}>⚠</div>
           <h1 style={{ fontSize: 'var(--text-xl)', marginBottom: 'var(--space-3)', color: 'var(--color-text)' }}>
@@ -99,23 +109,33 @@ export function App() {
   }
 
   return (
-    <div class="app-container">
+    <div class={styles.appContainer}>
       {/* Header */}
-      <header class="app-header">
-        <h1 class="app-heading">Tasks</h1>
+      <header class={styles.appHeader}>
+        <h1 class={styles.appHeading}>Tasks</h1>
       </header>
 
       {/* Add Task Form */}
       <AddTaskForm searchInputRef={searchInputRef} />
+
+      {/* Toolbar */}
+      <div class={styles.toolbar}>
+        <SearchInput inputRef={searchInputRef} />
+        <div class={styles.toolbarControls}>
+          <FilterTabs filter={filter} onChange={setFilter} />
+          <DueThisWeekToggle active={dueThisWeek} onToggle={() => setDueThisWeek(!dueThisWeek)} />
+          <SortDropdown sortMode={sortMode} onChange={setSortMode} />
+        </div>
+      </div>
 
       {/* Task Stats */}
       <TaskStats filter={filter} />
 
       {/* Task List or Empty State */}
       {loading ? (
-        <div class="skeleton-list" aria-busy="true">
+        <div class={styles.skeletonList} aria-busy="true">
           {[1, 2, 3].map((i) => (
-            <div key={i} class="skeleton-item" />
+            <div key={i} class={styles.skeletonItem} />
           ))}
         </div>
       ) : hasFilteredResults ? (

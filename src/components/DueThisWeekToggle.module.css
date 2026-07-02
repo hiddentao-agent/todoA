@@ -1,0 +1,37 @@
+/* ========================================
+   DueThisWeekToggle — pill toggle
+   ======================================== */
+
+.toggle {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  padding: 6px 16px;
+  border-radius: var(--radius-full);
+  font-family: inherit;
+  cursor: pointer;
+  transition: background-color var(--transition-fast),
+    color var(--transition-fast),
+    border-color var(--transition-fast);
+  line-height: var(--leading-sm);
+}
+
+.active {
+  background: var(--color-primary);
+  color: var(--color-primary-text);
+  border: 1px solid var(--color-primary);
+}
+
+.inactive {
+  background: transparent;
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border);
+}
+
+.inactive:hover {
+  border-color: var(--color-text-secondary);
+}
+
+.toggle:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-border-focus);
+  outline-offset: var(--focus-ring-offset);
+}

@@ -16,6 +16,7 @@ export function AddTaskForm({ searchInputRef, disabled }: AddTaskFormProps) {
 
   const inputRef = useRef<HTMLInputElement>(null);
   const [text, setText] = useState('');
+  const [dueDate, setDueDate] = useState('');
   const [validationError, setValidationError] = useState<string | null>(null);
 
   const isDisabled = disabled ?? importing;
@@ -46,8 +47,9 @@ export function AddTaskForm({ searchInputRef, disabled }: AddTaskFormProps) {
 
     setValidationError(null);
 
-    await addTodo(trimmed);
+    await addTodo(trimmed, dueDate || undefined);
     setText('');
+    setDueDate('');
 
     // Focus moves to search input when provided
     searchInputRef?.current?.focus();
@@ -80,13 +82,23 @@ export function AddTaskForm({ searchInputRef, disabled }: AddTaskFormProps) {
           </span>
         )}
       </div>
-      <button
-        type="submit"
-        class={styles.addButton}
-        disabled={isDisabled}
-      >
-        Add
-      </button>
+      <div class={styles.dateRow}>
+        <input
+          type="date"
+          class={styles.dateInput}
+          aria-label="Due date (optional)"
+          value={dueDate}
+          onInput={(e: Event) => setDueDate((e.target as HTMLInputElement).value)}
+          disabled={isDisabled}
+        />
+        <button
+          type="submit"
+          class={styles.addButton}
+          disabled={isDisabled}
+        >
+          Add
+        </button>
+      </div>
     </form>
   );
 }

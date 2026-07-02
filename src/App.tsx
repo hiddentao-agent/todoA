@@ -1,6 +1,9 @@
 import { useEffect, useCallback, useRef, useState } from 'preact/hooks';
 import { useTodoStore, selectFilteredTodos, selectTaskCounts } from '@/store';
 import { useKeyboard } from '@/hooks/useKeyboard';
+import { db } from '@/db';
+import { getExportFilename, serializeTodos, downloadJson } from '@/utils/export';
+import { processImportFile, validateFileSize } from '@/utils/import';
 import { AddTaskForm } from '@/components/AddTaskForm';
 import { TaskList } from '@/components/TaskList';
 import { TaskStats } from '@/components/TaskStats';
@@ -11,6 +14,9 @@ import { FilterTabs } from '@/components/FilterTabs';
 import { SearchInput } from '@/components/SearchInput';
 import { SortDropdown } from '@/components/SortDropdown';
 import { DueThisWeekToggle } from '@/components/DueThisWeekToggle';
+import { ThemeToggle } from '@/components/ThemeToggle';
+import { SettingsMenu } from '@/components/SettingsMenu';
+import KeyboardShortcutsModal from '@/components/KeyboardShortcutsModal';
 import styles from './App.module.css';
 
 export function App() {
@@ -24,17 +30,22 @@ export function App() {
   const theme = useTodoStore((s) => s.theme);
   const todos = useTodoStore(selectFilteredTodos);
   const counts = useTodoStore(selectTaskCounts);
+  const allTodos = useTodoStore((s) => s.todos);
   const setFilter = useTodoStore((s) => s.setFilter);
   const setSortMode = useTodoStore((s) => s.setSortMode);
   const setSearchQuery = useTodoStore((s) => s.setSearchQuery);
   const setDueThisWeek = useTodoStore((s) => s.setDueThisWeek);
+  const importTodos = useTodoStore((s) => s.importTodos);
+  const moveTodoUp = useTodoStore((s) => s.moveTodoUp);
+  const moveTodoDown = useTodoStore((s) => s.moveTodoDown);
 
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   const [toast, setToast] = useState<{
     message: string;
-    onUndo: () => void;
+    onUndo?: () => void;
   } | null>(null);
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
 
   // Subscribe to undo buffer for toast
   const undoBuffer = useTodoStore((s) => s.undoBuffer);
@@ -50,7 +61,6 @@ export function App() {
           setToast(null);
         },
       });
-      // Auto-dismiss after 10s
       const timer = setTimeout(() => setToast(null), 10_000);
       return () => clearTimeout(timer);
     }
@@ -71,9 +81,65 @@ export function App() {
     searchInputRef.current?.focus();
   }, []);
 
+  const handleShortcutsOpen = useCallback(() => {
+    setShortcutsOpen(true);
+  }, []);
+
   useKeyboard({
     onSearchFocus: handleSearchFocus,
+    onShortcutsOpen: handleShortcutsOpen,
   });
+
+  // Export
+  const handleExport = useCallback(async () => {
+    const all = await db.todos.orderBy('order').toArray();
+    const filename = getExportFilename();
+    const content = serializeTodos(all);
+    downloadJson(filename, content);
+  }, []);
+
+  // Import
+  const handleImport = useCallback(
+    async (file: File) => {
+      // Gate 1: File size
+      const sizeError = validateFileSize(file);
+      if (sizeError) {
+        setToast({ message: sizeError.message });
+        return;
+      }
+
+      // Read file
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const rawText = e.target?.result as string;
+        const result = processImportFile(rawText);
+
+        if ('message' in result) {
+          setToast({ message: result.message });
+          return;
+        }
+
+        // Confirmation prompt
+        const confirmed = window.confirm(
+          `This will replace your ${allTodos.length} current task${allTodos.length !== 1 ? 's' : ''} with ${result.todos.length} imported task${result.todos.length !== 1 ? 's' : ''}. This cannot be undone.`,
+        );
+
+        if (!confirmed) return;
+
+        try {
+          await importTodos(result.todos);
+          setToast({ message: `Imported ${result.todos.length} task${result.todos.length !== 1 ? 's' : ''}.` });
+        } catch {
+          setToast({ message: 'Import failed. Please try again.' });
+        }
+      };
+      reader.onerror = () => {
+        setToast({ message: 'Failed to read file.' });
+      };
+      reader.readAsText(file);
+    },
+    [allTodos.length, importTodos],
+  );
 
   // Storage unavailable error screen
   if (error) {
@@ -113,6 +179,23 @@ export function App() {
       {/* Header */}
       <header class={styles.appHeader}>
         <h1 class={styles.appHeading}>Tasks</h1>
+        <div class={styles.headerActions}>
+          <button
+            class={styles.headerBtn}
+            onClick={handleShortcutsOpen}
+            aria-label="Keyboard shortcuts"
+            title="Keyboard shortcuts (?)"
+            type="button"
+          >
+            ?
+          </button>
+          <ThemeToggle />
+          <SettingsMenu
+            onExport={handleExport}
+            onImport={handleImport}
+            onShortcutsOpen={handleShortcutsOpen}
+          />
+        </div>
       </header>
 
       {/* Add Task Form */}
@@ -139,7 +222,11 @@ export function App() {
           ))}
         </div>
       ) : hasFilteredResults ? (
-        <TaskList todos={todos} />
+        <TaskList
+          todos={todos}
+          onMoveUp={moveTodoUp}
+          onMoveDown={moveTodoDown}
+        />
       ) : (
         <EmptyState variant={emptyVariant} searchQuery={searchQuery} onClearSearch={() => setSearchQuery('')} />
       )}
@@ -147,9 +234,18 @@ export function App() {
       {/* Clear Completed Button */}
       {counts.completed > 0 && <ClearCompletedButton count={counts.completed} />}
 
+      {/* Keyboard Shortcuts Modal */}
+      {shortcutsOpen && (
+        <KeyboardShortcutsModal onClose={() => setShortcutsOpen(false)} />
+      )}
+
       {/* Toast */}
       {toast && (
-        <Toast message={toast.message} onUndo={toast.onUndo} onDismiss={() => setToast(null)} />
+        <Toast
+          message={toast.message}
+          onUndo={toast.onUndo || (() => setToast(null))}
+          onDismiss={() => setToast(null)}
+        />
       )}
 
       {/* Live region for announcements */}

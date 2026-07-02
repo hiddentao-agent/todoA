@@ -5,26 +5,23 @@ import styles from './TaskList.module.css';
 
 interface TaskListProps {
   todos: Todo[];
+  onMoveUp?: (id: number) => void;
+  onMoveDown?: (id: number) => void;
 }
 
-export function TaskList({ todos }: TaskListProps) {
+export function TaskList({ todos, onMoveUp, onMoveDown }: TaskListProps) {
   const listRef = useRef<HTMLUListElement>(null);
   const totalCount = todos.length;
 
   const handleFocusAfterDelete = (deletedId: number) => {
-    // Find the index of the deleted todo within the current array
-    // (which has not yet been updated by the store)
     const deletedIndex = todos.findIndex((t) => t.id === deletedId);
     if (deletedIndex === -1) return;
 
     const newLength = todos.length - 1;
     if (newLength <= 0) return;
 
-    // If there is a task at the same index position (shifted up), focus it;
-    // otherwise focus the previous task (deleted was the last item).
     const targetIndex = Math.min(deletedIndex, newLength - 1);
 
-    // Wait for the DOM to reflect the updated list after re-render
     requestAnimationFrame(() => {
       const list = listRef.current;
       if (!list) return;
@@ -46,6 +43,8 @@ export function TaskList({ todos }: TaskListProps) {
           index={index}
           totalCount={totalCount}
           onFocusAfterDelete={handleFocusAfterDelete}
+          onMoveUp={onMoveUp}
+          onMoveDown={onMoveDown}
         />
       ))}
     </ul>

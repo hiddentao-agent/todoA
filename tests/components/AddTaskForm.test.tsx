@@ -40,7 +40,7 @@ describe('AddTaskForm', () => {
     const input = getInput();
     fireEvent.input(input, { target: { value: 'Buy milk' } });
     fireEvent.submit(getForm());
-    expect(mockAddTodo).toHaveBeenCalledWith('Buy milk');
+    expect(mockAddTodo).toHaveBeenCalledWith('Buy milk', undefined);
   });
 
   it('calls addTodo on Add button click', () => {
@@ -48,7 +48,7 @@ describe('AddTaskForm', () => {
     const input = getInput();
     fireEvent.input(input, { target: { value: 'Buy milk' } });
     fireEvent.click(screen.getByRole('button', { name: 'Add' }));
-    expect(mockAddTodo).toHaveBeenCalledWith('Buy milk');
+    expect(mockAddTodo).toHaveBeenCalledWith('Buy milk', undefined);
   });
 
   it('shows validation error for empty input', () => {

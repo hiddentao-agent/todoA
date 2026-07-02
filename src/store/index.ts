@@ -45,6 +45,8 @@ export interface TodoStore {
   clearCompleted: () => Promise<void>;
   undoClearCompleted: () => Promise<void>;
   reorderTodo: (id: number, newOrder: number) => Promise<void>;
+  moveTodoUp: (id: number) => Promise<void>;
+  moveTodoDown: (id: number) => Promise<void>;
   importTodos: (todos: Todo[]) => Promise<void>;
 
   // UI actions (synchronous)
@@ -208,6 +210,44 @@ export const useTodoStore = create<TodoStore>((set, get) => ({
     await db.todos.update(id, { order: newOrder });
     const todos = await db.todos.orderBy('order').toArray();
     set({ todos });
+  },
+
+  moveTodoUp: async (id: number) => {
+    const state = get();
+    const sorted = [...state.todos].sort((a, b) => a.order - b.order);
+    const idx = sorted.findIndex((t) => t.id === id);
+    if (idx <= 0) return;
+
+    const prev = sorted[idx - 1];
+    const current = sorted[idx];
+    // Swap orders
+    await db.todos.update(prev.id!, { order: current.order });
+    await db.todos.update(current.id!, { order: prev.order });
+    const todos = await db.todos.orderBy('order').toArray();
+    set({ todos });
+    // Switch back to manual sort when manually reordering
+    if (state.sortMode !== 'manual') {
+      get().setSortMode('manual');
+    }
+  },
+
+  moveTodoDown: async (id: number) => {
+    const state = get();
+    const sorted = [...state.todos].sort((a, b) => a.order - b.order);
+    const idx = sorted.findIndex((t) => t.id === id);
+    if (idx < 0 || idx >= sorted.length - 1) return;
+
+    const next = sorted[idx + 1];
+    const current = sorted[idx];
+    // Swap orders
+    await db.todos.update(next.id!, { order: current.order });
+    await db.todos.update(current.id!, { order: next.order });
+    const todos = await db.todos.orderBy('order').toArray();
+    set({ todos });
+    // Switch back to manual sort when manually reordering
+    if (state.sortMode !== 'manual') {
+      get().setSortMode('manual');
+    }
   },
 
   importTodos: async (importedTodos) => {

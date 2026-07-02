@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { useTodoStore, selectFilteredTodos, selectTaskCounts } from '@/store';
+import { buildSearchIndex } from '@/search';
 import type { Todo } from '@/db/types';
 
 // Mock Dexie with a resettable in-memory store
@@ -156,6 +157,126 @@ describe('TodoStore', () => {
     });
   });
 
+  describe('loadTodos', () => {
+    it('loads todos from db and sets loading to false', async () => {
+      // Add todos directly to the mock DB
+      const todos = [
+        { id: 1, text: 'Loaded', completed: false, order: 1000, dueDate: null, createdAt: 0 },
+      ];
+      mockDbStore[1] = { ...todos[0], id: 1 } as Todo;
+
+      useTodoStore.setState({ todos: [], loading: true });
+      await useTodoStore.getState().loadTodos();
+      const state = useTodoStore.getState();
+      expect(state.loading).toBe(false);
+      expect(state.error).toBeNull();
+      expect(state.todos).toHaveLength(1);
+      expect(state.todos[0].text).toBe('Loaded');
+    });
+
+    it('sets error when loadTodos fails', async () => {
+      // Temporarily break the toArray mock
+
+      const db = await import('@/db');
+      const { db: mockDb } = db;
+      const originalImpl = mockDb.todos.orderBy().toArray;
+
+      mockDb.todos.orderBy().toArray = vi.fn().mockRejectedValue(new Error('DB error'));
+
+      useTodoStore.setState({ todos: [], loading: true, error: null });
+      await useTodoStore.getState().loadTodos();
+      const state = useTodoStore.getState();
+      expect(state.loading).toBe(false);
+      expect(state.error).toBe('DB error');
+
+      // Restore
+      mockDb.todos.orderBy().toArray = originalImpl;
+    });
+
+    it('sets generic error message when non-Error is thrown', async () => {
+      const db = await import('@/db');
+      const { db: mockDb } = db;
+      const originalImpl = mockDb.todos.orderBy().toArray;
+
+      mockDb.todos.orderBy().toArray = vi.fn().mockRejectedValue('string error');
+
+      useTodoStore.setState({ todos: [], loading: true, error: null });
+      await useTodoStore.getState().loadTodos();
+      const state = useTodoStore.getState();
+      expect(state.error).toBe('Failed to load tasks');
+
+      // Restore
+      mockDb.todos.orderBy().toArray = originalImpl;
+    });
+  });
+
+  describe('moveTodoUp / moveTodoDown', () => {
+    it('moves a todo up by swapping order', async () => {
+      const { addTodo, moveTodoUp } = useTodoStore.getState();
+      await addTodo('First');
+      await addTodo('Second');
+      await addTodo('Third');
+      let state = useTodoStore.getState();
+      const secondId = state.todos[1].id!;
+
+      await moveTodoUp(secondId);
+      state = useTodoStore.getState();
+      expect(state.todos[0].text).toBe('Second');
+      expect(state.todos[1].text).toBe('First');
+    });
+
+    it('does not move first todo up', async () => {
+      const { addTodo, moveTodoUp } = useTodoStore.getState();
+      await addTodo('First');
+      await addTodo('Second');
+      let state = useTodoStore.getState();
+      const firstId = state.todos[0].id!;
+
+      await moveTodoUp(firstId);
+      state = useTodoStore.getState();
+      expect(state.todos[0].text).toBe('First');
+    });
+
+    it('moves a todo down by swapping order', async () => {
+      const { addTodo, moveTodoDown } = useTodoStore.getState();
+      await addTodo('First');
+      await addTodo('Second');
+      await addTodo('Third');
+      let state = useTodoStore.getState();
+      const firstId = state.todos[0].id!;
+
+      await moveTodoDown(firstId);
+      state = useTodoStore.getState();
+      expect(state.todos[0].text).toBe('Second');
+      expect(state.todos[1].text).toBe('First');
+    });
+
+    it('does not move last todo down', async () => {
+      const { addTodo, moveTodoDown } = useTodoStore.getState();
+      await addTodo('First');
+      await addTodo('Second');
+      let state = useTodoStore.getState();
+      const lastId = state.todos[1].id!;
+
+      await moveTodoDown(lastId);
+      state = useTodoStore.getState();
+      expect(state.todos[1].text).toBe('Second');
+    });
+
+    it('switches to manual sort mode when reordering', async () => {
+      useTodoStore.setState({ sortMode: 'dueDateAsc' });
+      const { addTodo, moveTodoUp } = useTodoStore.getState();
+      await addTodo('First');
+      await addTodo('Second');
+      let state = useTodoStore.getState();
+      const secondId = state.todos[1].id!;
+
+      await moveTodoUp(secondId);
+      state = useTodoStore.getState();
+      expect(state.sortMode).toBe('manual');
+    });
+  });
+
   describe('clearCompleted / undoClearCompleted', () => {
     it('clears completed tasks and creates undo buffer', async () => {
       const { addTodo } = useTodoStore.getState();
@@ -190,6 +311,46 @@ describe('TodoStore', () => {
     });
   });
 
+  describe('importTodos', () => {
+    it('replaces all todos with imported ones', async () => {
+      const { addTodo, importTodos } = useTodoStore.getState();
+      await addTodo('Original');
+      expect(useTodoStore.getState().todos).toHaveLength(1);
+
+      await importTodos([
+        { id: 10, text: 'Imported', completed: false, order: 1000, dueDate: null, createdAt: 0 },
+      ]);
+      const state = useTodoStore.getState();
+      expect(state.todos).toHaveLength(1);
+      expect(state.todos[0].text).toBe('Imported');
+    });
+
+    it('sets importing to false after completion', async () => {
+      await useTodoStore.getState().importTodos([]);
+      expect(useTodoStore.getState().importing).toBe(false);
+    });
+  });
+
+  describe('setSearchQuery / setDueThisWeek / setImporting', () => {
+    it('sets search query', () => {
+      useTodoStore.getState().setSearchQuery('test query');
+      expect(useTodoStore.getState().searchQuery).toBe('test query');
+    });
+
+    it('sets due this week', () => {
+      useTodoStore.getState().setDueThisWeek(true);
+      expect(useTodoStore.getState().dueThisWeek).toBe(true);
+
+      useTodoStore.getState().setDueThisWeek(false);
+      expect(useTodoStore.getState().dueThisWeek).toBe(false);
+    });
+
+    it('sets importing', () => {
+      useTodoStore.getState().setImporting(true);
+      expect(useTodoStore.getState().importing).toBe(true);
+    });
+  });
+
   describe('setTheme', () => {
     it('persists theme to localStorage', () => {
       const { setTheme } = useTodoStore.getState();
@@ -204,6 +365,259 @@ describe('TodoStore', () => {
       const { setSortMode } = useTodoStore.getState();
       setSortMode('dueDateAsc');
       expect(localStorage.setItem).toHaveBeenCalledWith('todo_sort', 'dueDateAsc');
+    });
+  });
+
+  describe('error handling in write actions', () => {
+    /**
+     * Helper: overrides a mock method on the Dexie mock, runs the action, then restores.
+     * Ensures the mock is always restored even if the test assertion fails.
+     */
+    async function withMockError(
+      methodName: 'add' | 'update' | 'delete' | 'bulkDelete' | 'bulkAdd',
+      rejectValue: unknown,
+      action: () => Promise<void>,
+      expectedError: string,
+    ) {
+      const db = await import('@/db');
+      const { db: mockDb } = db;
+      const original = mockDb.todos[methodName];
+      try {
+        mockDb.todos[methodName] = vi.fn().mockRejectedValue(rejectValue);
+        await action();
+        expect(useTodoStore.getState().error).toBe(expectedError);
+      } finally {
+        mockDb.todos[methodName] = original;
+      }
+    }
+
+    beforeEach(() => {
+      useTodoStore.setState({ error: null });
+    });
+
+    describe('addTodo', () => {
+      it('sets error message when Dexie add rejects with Error', async () => {
+        await withMockError(
+          'add',
+          new Error('Add failed'),
+          () => useTodoStore.getState().addTodo('Valid text'),
+          'Add failed',
+        );
+      });
+
+      it('sets generic error when Dexie add rejects with non-Error', async () => {
+        await withMockError(
+          'add',
+          'string error',
+          () => useTodoStore.getState().addTodo('Valid text'),
+          'Failed to add task',
+        );
+      });
+    });
+
+    describe('updateTodo', () => {
+      const setup = async () => {
+        await useTodoStore.getState().addTodo('Test');
+        return useTodoStore.getState().todos[0].id!;
+      };
+
+      it('sets error message when Dexie update rejects', async () => {
+        const id = await setup();
+        await withMockError(
+          'update',
+          new Error('Update failed'),
+          () => useTodoStore.getState().updateTodo(id, { text: 'Updated' }),
+          'Update failed',
+        );
+      });
+
+      it('sets generic error when Dexie update rejects with non-Error', async () => {
+        const id = await setup();
+        await withMockError(
+          'update',
+          'string error',
+          () => useTodoStore.getState().updateTodo(id, { text: 'Updated' }),
+          'Failed to update task',
+        );
+      });
+    });
+
+    describe('deleteTodo', () => {
+      const setup = async () => {
+        await useTodoStore.getState().addTodo('Test');
+        return useTodoStore.getState().todos[0].id!;
+      };
+
+      it('sets error message when Dexie delete rejects', async () => {
+        const id = await setup();
+        await withMockError(
+          'delete',
+          new Error('Delete failed'),
+          () => useTodoStore.getState().deleteTodo(id),
+          'Delete failed',
+        );
+      });
+
+      it('sets generic error when Dexie delete rejects with non-Error', async () => {
+        const id = await setup();
+        await withMockError(
+          'delete',
+          'string error',
+          () => useTodoStore.getState().deleteTodo(id),
+          'Failed to delete task',
+        );
+      });
+    });
+
+    describe('toggleTodo', () => {
+      const setup = async () => {
+        await useTodoStore.getState().addTodo('Test');
+        return useTodoStore.getState().todos[0].id!;
+      };
+
+      it('sets error message when Dexie update rejects', async () => {
+        const id = await setup();
+        await withMockError(
+          'update',
+          new Error('Toggle failed'),
+          () => useTodoStore.getState().toggleTodo(id),
+          'Toggle failed',
+        );
+      });
+
+      it('sets generic error when Dexie toggle rejects with non-Error', async () => {
+        const id = await setup();
+        await withMockError(
+          'update',
+          'string error',
+          () => useTodoStore.getState().toggleTodo(id),
+          'Failed to toggle task',
+        );
+      });
+    });
+
+    describe('clearCompleted', () => {
+      const setup = async () => {
+        await useTodoStore.getState().addTodo('Done');
+        const id = useTodoStore.getState().todos[0].id!;
+        await useTodoStore.getState().toggleTodo(id);
+        useTodoStore.setState({ error: null });
+      };
+
+      it('sets error message when Dexie bulkDelete rejects', async () => {
+        await setup();
+        await withMockError(
+          'bulkDelete',
+          new Error('Clear failed'),
+          () => useTodoStore.getState().clearCompleted(),
+          'Clear failed',
+        );
+      });
+
+      it('sets generic error when Dexie clearCompleted rejects with non-Error', async () => {
+        await setup();
+        await withMockError(
+          'bulkDelete',
+          'string error',
+          () => useTodoStore.getState().clearCompleted(),
+          'Failed to clear completed tasks',
+        );
+      });
+    });
+
+    describe('moveTodoUp', () => {
+      const setup = async () => {
+        await useTodoStore.getState().addTodo('First');
+        await useTodoStore.getState().addTodo('Second');
+        return useTodoStore.getState().todos[1].id!;
+      };
+
+      it('sets error message when Dexie update rejects', async () => {
+        const id = await setup();
+        await withMockError(
+          'update',
+          new Error('Move up failed'),
+          () => useTodoStore.getState().moveTodoUp(id),
+          'Move up failed',
+        );
+      });
+    });
+
+    describe('moveTodoDown', () => {
+      const setup = async () => {
+        await useTodoStore.getState().addTodo('First');
+        await useTodoStore.getState().addTodo('Second');
+        return useTodoStore.getState().todos[0].id!;
+      };
+
+      it('sets error message when Dexie update rejects', async () => {
+        const id = await setup();
+        await withMockError(
+          'update',
+          new Error('Move down failed'),
+          () => useTodoStore.getState().moveTodoDown(id),
+          'Move down failed',
+        );
+      });
+    });
+
+    describe('undoClearCompleted', () => {
+      const setup = async () => {
+        await useTodoStore.getState().addTodo('Task');
+        const id = useTodoStore.getState().todos[0].id!;
+        await useTodoStore.getState().toggleTodo(id);
+        await useTodoStore.getState().clearCompleted();
+        // Now undoBuffer is set
+        expect(useTodoStore.getState().undoBuffer).not.toBeNull();
+        useTodoStore.setState({ error: null });
+      };
+
+      it('sets error message when Dexie bulkAdd rejects', async () => {
+        await setup();
+        await withMockError(
+          'bulkAdd',
+          new Error('Undo failed'),
+          () => useTodoStore.getState().undoClearCompleted(),
+          'Undo failed',
+        );
+      });
+
+      it('sets generic error when Dexie undoClearCompleted rejects with non-Error', async () => {
+        await setup();
+        await withMockError(
+          'bulkAdd',
+          'string error',
+          () => useTodoStore.getState().undoClearCompleted(),
+          'Failed to undo clear',
+        );
+      });
+    });
+
+    describe('reorderTodo', () => {
+      const setup = async () => {
+        await useTodoStore.getState().addTodo('Task');
+        return useTodoStore.getState().todos[0].id!;
+      };
+
+      it('sets error message when Dexie update rejects', async () => {
+        const id = await setup();
+        await withMockError(
+          'update',
+          new Error('Reorder failed'),
+          () => useTodoStore.getState().reorderTodo(id, 5000),
+          'Reorder failed',
+        );
+      });
+
+      it('sets generic error when Dexie reorderTodo rejects with non-Error', async () => {
+        const id = await setup();
+        await withMockError(
+          'update',
+          'string error',
+          () => useTodoStore.getState().reorderTodo(id, 5000),
+          'Failed to reorder task',
+        );
+      });
     });
   });
 });
@@ -298,6 +712,130 @@ describe('selectFilteredTodos', () => {
     const result = selectFilteredTodos(store as ReturnType<typeof useTodoStore.getState>);
     expect(result[0].text).toBe('Late');
     expect(result[1].text).toBe('Early');
+  });
+  it('sorts by default order when sortMode is manual', () => {
+    const store = makeStore({
+      sortMode: 'manual',
+      todos: [
+        { id: 2, text: 'Second', completed: false, order: 2000, dueDate: null, createdAt: 0 },
+        { id: 1, text: 'First', completed: false, order: 1000, dueDate: null, createdAt: 0 },
+      ],
+    });
+    const result = selectFilteredTodos(store as ReturnType<typeof useTodoStore.getState>);
+    expect(result[0].text).toBe('First');
+    expect(result[1].text).toBe('Second');
+  });
+
+  it('filters by due this week', () => {
+    const today = new Date();
+    const monday = new Date(today);
+    monday.setDate(today.getDate() - today.getDay() + 1);
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+
+    const thisWeekDate = monday.toISOString().slice(0, 10);
+    const lastWeekDate = new Date(monday.getTime() - 86400000).toISOString().slice(0, 10);
+
+    const store = makeStore({
+      dueThisWeek: true,
+      todos: [
+        {
+          id: 1,
+          text: 'This week',
+          completed: false,
+          order: 1000,
+          dueDate: thisWeekDate,
+          createdAt: 0,
+        },
+        {
+          id: 2,
+          text: 'Last week',
+          completed: false,
+          order: 2000,
+          dueDate: lastWeekDate,
+          createdAt: 0,
+        },
+        { id: 3, text: 'No date', completed: false, order: 3000, dueDate: null, createdAt: 0 },
+      ],
+    });
+    const result = selectFilteredTodos(store as ReturnType<typeof useTodoStore.getState>);
+    expect(result).toHaveLength(1);
+    expect(result[0].text).toBe('This week');
+  });
+
+  it('filters by search query', () => {
+    const todos: Todo[] = [
+      {
+        id: 1,
+        text: 'Find me unique text',
+        completed: false,
+        order: 1000,
+        dueDate: null,
+        createdAt: 0,
+      },
+      { id: 2, text: 'Ordinary', completed: false, order: 2000, dueDate: null, createdAt: 0 },
+    ];
+    buildSearchIndex(todos);
+    const store = makeStore({
+      searchQuery: 'unique',
+      todos,
+    });
+    const result = selectFilteredTodos(store as ReturnType<typeof useTodoStore.getState>);
+    expect(result).toHaveLength(1);
+    expect(result[0].text).toBe('Find me unique text');
+  });
+
+  it('filters by search query with no matches', () => {
+    const todos: Todo[] = [
+      { id: 1, text: 'Something else', completed: false, order: 1000, dueDate: null, createdAt: 0 },
+    ];
+    buildSearchIndex(todos);
+    const store = makeStore({
+      searchQuery: 'nonexistent',
+      todos,
+    });
+    const result = selectFilteredTodos(store as ReturnType<typeof useTodoStore.getState>);
+    expect(result).toHaveLength(0);
+  });
+
+  it('sorts null due dates to the end ascending', () => {
+    const store = makeStore({
+      sortMode: 'dueDateAsc',
+      todos: [
+        { id: 1, text: 'Null date', completed: false, order: 1000, dueDate: null, createdAt: 0 },
+        {
+          id: 2,
+          text: 'Has date',
+          completed: false,
+          order: 2000,
+          dueDate: '2026-06-01',
+          createdAt: 0,
+        },
+      ],
+    });
+    const result = selectFilteredTodos(store as ReturnType<typeof useTodoStore.getState>);
+    expect(result[0].text).toBe('Has date');
+    expect(result[1].text).toBe('Null date');
+  });
+
+  it('sorts null due dates to the end descending', () => {
+    const store = makeStore({
+      sortMode: 'dueDateDesc',
+      todos: [
+        { id: 1, text: 'Null date', completed: false, order: 1000, dueDate: null, createdAt: 0 },
+        {
+          id: 2,
+          text: 'Has date',
+          completed: false,
+          order: 2000,
+          dueDate: '2026-06-01',
+          createdAt: 0,
+        },
+      ],
+    });
+    const result = selectFilteredTodos(store as ReturnType<typeof useTodoStore.getState>);
+    expect(result[0].text).toBe('Has date');
+    expect(result[1].text).toBe('Null date');
   });
 });
 

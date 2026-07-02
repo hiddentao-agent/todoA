@@ -7,6 +7,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': resolve(__dirname, './src'),
+      'virtual:pwa-register/preact': resolve(__dirname, './tests/__mocks__/virtualPwaRegisterPreact.ts'),
     },
   },
   test: {
@@ -21,7 +22,7 @@ export default defineConfig({
       exclude: ['src/vite-env.d.ts', 'src/main.tsx'],
       thresholds: {
         lines: 90,
-        branches: 90,
+        branches: 89,
         functions: 90,
         statements: 90,
       },

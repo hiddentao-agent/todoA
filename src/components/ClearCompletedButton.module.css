@@ -1,0 +1,43 @@
+/* ========================================
+   ClearCompletedButton — Destructive outline
+   ======================================== */
+
+.wrapper {
+  margin-top: var(--space-4);
+}
+
+.button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 10px 20px;
+  background: transparent;
+  border: 1px solid var(--color-danger);
+  border-radius: var(--radius-md);
+  color: var(--color-danger);
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  line-height: var(--leading-sm);
+  cursor: pointer;
+  transition: background-color var(--transition-fast),
+    color var(--transition-fast);
+  min-height: var(--target-touch);
+}
+
+.button:hover:not(:disabled) {
+  background: var(--color-danger);
+  color: var(--color-danger-text);
+}
+
+.button:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-border-focus);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/* Tablet+ (>=768px): natural width */
+@media (min-width: 768px) {
+  .button {
+    width: auto;
+  }
+}

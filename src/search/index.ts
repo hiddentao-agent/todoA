@@ -1,0 +1,45 @@
+import lunr from 'lunr';
+import type { Todo } from '@/db/types';
+
+let index: lunr.Index | null = null;
+
+/** Rebuild the lunr search index from an array of todos. */
+export function buildSearchIndex(todos: Todo[]): void {
+  index = lunr(function () {
+    this.ref('id');
+    this.field('text');
+    // Boost exact matches
+    this.pipeline.remove(lunr.stemmer);
+    this.searchPipeline.remove(lunr.stemmer);
+
+    for (const todo of todos) {
+      if (todo.id !== undefined) {
+        this.add({
+          id: todo.id.toString(),
+          text: todo.text,
+        });
+      }
+    }
+  });
+}
+
+/** Search the index. Returns an array of { ref, score } objects. */
+export function search(query: string): Array<{ ref: string; score: number }> {
+  if (!index) return [];
+  const trimmed = query.trim();
+  if (!trimmed) return [];
+
+  // Wildcard append for substring matching
+  const results = index.search(
+    trimmed
+      .split(/\s+/)
+      .map((term) => `${term}*`)
+      .join(' '),
+  );
+  return results.map((r) => ({ ref: r.ref, score: r.score }));
+}
+
+/** Clear the search index. */
+export function clearSearchIndex(): void {
+  index = null;
+}

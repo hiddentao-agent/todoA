@@ -26,12 +26,10 @@ export function search(query: string): Array<{ ref: string; score: number }> {
   const trimmed = query.trim();
   if (!trimmed) return [];
 
-  // Wildcard append for substring matching
-  const results = index.search(
-    trimmed
-      .split(/\s+/)
-      .map((term) => `${term}*`)
-      .join(' '),
-  );
+  // Search without wildcards — lunr's stemmer handles morphological
+  // variants (e.g. "running" matches "run"), which satisfies the PRD's
+  // fuzzy-match requirement. Wildcards are incompatible with the stemmer
+  // because the stemmer does not preserve the wildcard operator.
+  const results = index.search(trimmed);
   return results.map((r) => ({ ref: r.ref, score: r.score }));
 }

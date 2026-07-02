@@ -135,9 +135,9 @@ export default function KeyboardShortcutsModal({ onClose }: KeyboardShortcutsMod
             {SHORTCUTS.map((shortcut) => (
               <tr key={shortcut.keys.join('+')} class={styles.tableRow}>
                 <td class={styles.tableCell}>
-                  {shortcut.keys.map((key, ki) => (
-                    <span key={ki}>
-                      {ki > 0 && <span> + </span>}
+                  {shortcut.keys.map((key, idx) => (
+                    <span key={key}>
+                      {idx > 0 && <span> + </span>}
                       <kbd>{key}</kbd>
                     </span>
                   ))}

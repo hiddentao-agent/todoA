@@ -13,9 +13,12 @@ interface KeyboardActions {
 export function useKeyboard(actions: KeyboardActions): void {
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
-      const target = e.target as HTMLElement;
-      const tag = target.tagName.toLowerCase();
-      const isInput = tag === 'input' || tag === 'textarea' || target.isContentEditable;
+      const target = e.target;
+      const tag = target instanceof Element ? target.tagName.toLowerCase() : '';
+      const isInput =
+        tag === 'input' ||
+        tag === 'textarea' ||
+        (target instanceof HTMLElement && target.isContentEditable);
 
       // / — focus search (only when not typing)
       if (e.key === '/' && !isInput && actions.onSearchFocus) {

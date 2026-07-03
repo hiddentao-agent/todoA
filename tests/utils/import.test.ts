@@ -17,9 +17,10 @@ describe('processImportFile', () => {
   });
 
   it('strips __proto__ keys', () => {
-    const json = JSON.stringify([
-      { text: 'Test', completed: false, order: 0, createdAt: 0, __proto__: { isAdmin: true } },
-    ]);
+    // Use a raw JSON string so __proto__ is an own property after JSON.parse,
+    // not a syntactic accessor processed at object-construction time.
+    const json =
+      '[{"text":"Test","completed":false,"order":0,"createdAt":0,"__proto__":{"isAdmin":true}}]';
     const result = processImportFile(json);
     if ('todos' in result) {
       const todo = result.todos[0] as unknown as Record<string, unknown>;
@@ -159,6 +160,18 @@ describe('processImportFile', () => {
     const json = JSON.stringify([
       { text: 'A', completed: 1, order: 0, createdAt: 0 },
       { text: 'B', completed: 0, order: 1000, createdAt: 0 },
+    ]);
+    const result = processImportFile(json);
+    if ('todos' in result) {
+      expect(result.todos[0].completed).toBe(true);
+      expect(result.todos[1].completed).toBe(false);
+    }
+  });
+
+  it('coerces string "true"/"false" completed correctly', () => {
+    const json = JSON.stringify([
+      { text: 'A', completed: 'true', order: 0, createdAt: 0 },
+      { text: 'B', completed: 'false', order: 1000, createdAt: 0 },
     ]);
     const result = processImportFile(json);
     if ('todos' in result) {

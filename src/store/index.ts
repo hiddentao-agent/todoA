@@ -44,7 +44,6 @@ export interface TodoStore {
   toggleTodo: (id: number) => Promise<void>;
   clearCompleted: () => Promise<void>;
   undoClearCompleted: () => Promise<void>;
-  reorderTodo: (id: number, newOrder: number) => Promise<void>;
   moveTodoUp: (id: number) => Promise<void>;
   moveTodoDown: (id: number) => Promise<void>;
   importTodos: (todos: Todo[]) => Promise<void>;
@@ -237,18 +236,6 @@ export const useTodoStore = create<TodoStore>((set, get) => ({
     } catch (err) {
       set({
         error: err instanceof Error ? err.message : 'Failed to undo clear',
-      });
-    }
-  },
-
-  reorderTodo: async (id, newOrder) => {
-    try {
-      await db.todos.update(id, { order: newOrder });
-      const todos = await db.todos.orderBy('order').toArray();
-      set({ todos, error: null });
-    } catch (err) {
-      set({
-        error: err instanceof Error ? err.message : 'Failed to reorder task',
       });
     }
   },

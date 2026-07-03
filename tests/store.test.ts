@@ -598,33 +598,6 @@ describe('TodoStore', () => {
         );
       });
     });
-
-    describe('reorderTodo', () => {
-      const setup = async () => {
-        await useTodoStore.getState().addTodo('Task');
-        return useTodoStore.getState().todos[0].id!;
-      };
-
-      it('sets error message when Dexie update rejects', async () => {
-        const id = await setup();
-        await withMockError(
-          'update',
-          new Error('Reorder failed'),
-          () => useTodoStore.getState().reorderTodo(id, 5000),
-          'Reorder failed',
-        );
-      });
-
-      it('sets generic error when Dexie reorderTodo rejects with non-Error', async () => {
-        const id = await setup();
-        await withMockError(
-          'update',
-          'string error',
-          () => useTodoStore.getState().reorderTodo(id, 5000),
-          'Failed to reorder task',
-        );
-      });
-    });
   });
 });
 

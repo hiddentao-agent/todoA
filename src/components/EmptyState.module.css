@@ -1,0 +1,53 @@
+/* ========================================
+   EmptyState — Centered empty states
+   ======================================== */
+
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: var(--space-10) var(--space-4);
+  color: var(--color-text-secondary);
+}
+
+.icon {
+  font-size: 3rem;
+  line-height: 1;
+  margin-bottom: var(--space-3);
+}
+
+.title {
+  font-size: var(--text-base);
+  font-weight: var(--font-medium);
+  color: var(--color-text);
+  margin-bottom: var(--space-1);
+}
+
+.description {
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+}
+
+.clearButton {
+  margin-top: var(--space-3);
+  padding: 8px 16px;
+  background: var(--color-primary);
+  color: var(--color-primary-text);
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+  min-height: var(--target-touch);
+}
+
+.clearButton:hover {
+  background: var(--color-primary-hover);
+}
+
+.clearButton:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-border-focus);
+  outline-offset: var(--focus-ring-offset);
+}

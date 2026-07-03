@@ -1,0 +1,263 @@
+/* ========================================
+   TaskItem Component Styles
+   ======================================== */
+
+.taskItem {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-2);
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast);
+}
+
+/* ---- Drag Handle ---- */
+
+.dragHandle {
+  width: 24px;
+  height: 32px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  color: var(--color-text-tertiary);
+  flex-shrink: 0;
+  user-select: none;
+}
+
+/* Visible on hover/focus-within on tablet+ (>=768px) */
+@media (min-width: 768px) {
+  .taskItem:hover .dragHandle,
+  .taskItem:focus-within .dragHandle {
+    display: flex;
+  }
+}
+
+/* ---- Checkbox ---- */
+
+.checkboxWrapper {
+  position: relative;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.checkboxInput {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  margin: 0;
+}
+
+.checkboxCustom {
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--color-checkbox-unchecked-border);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  position: relative;
+  flex-shrink: 0;
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast);
+}
+
+.checkboxCustom.checked {
+  background: var(--color-checkbox-checked-bg);
+  border-color: var(--color-checkbox-checked-border);
+}
+
+.checkboxCustom.checked::after {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 1px;
+  width: 8px;
+  height: 12px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+/* ---- Task Text ---- */
+
+.taskText {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: text;
+  transition: all var(--transition-base);
+  user-select: none;
+}
+
+.taskText.completed {
+  text-decoration: line-through;
+  color: var(--color-strikethrough);
+  opacity: 0.6;
+}
+
+/* ---- Inline Edit ---- */
+
+.editContainer {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.editInput {
+  flex: 1;
+  min-width: 0;
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--color-border-focus);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  outline: none;
+}
+
+.editInput:focus {
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+}
+
+.charCounter {
+  font-size: var(--text-xs);
+  color: var(--color-text-tertiary);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ---- Due Date ---- */
+
+.dueDate {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: var(--text-sm);
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background var(--transition-fast);
+}
+
+.dueDate:hover {
+  background: var(--color-border);
+}
+
+.dueDateOverdue {
+  color: var(--color-overdue);
+  background: var(--color-overdue-bg);
+  border-color: var(--color-overdue);
+}
+
+.dueDateOverdue:hover {
+  filter: brightness(1.1);
+}
+
+.dateEditRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  flex-shrink: 0;
+}
+
+.dateInput {
+  padding: 2px 4px;
+  font-size: var(--text-sm);
+  border: 1px solid var(--color-border-focus);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font: inherit;
+  outline: none;
+  max-width: 140px;
+}
+
+.clearDateBtn {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.clearDateBtn:hover {
+  color: var(--color-danger);
+  background: var(--color-surface);
+}
+
+/* ---- Action Buttons ---- */
+
+.actions {
+  display: flex;
+  gap: var(--space-1);
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+
+/* Always visible on mobile (<768px) */
+@media (max-width: 767px) {
+  .actions {
+    opacity: 1;
+  }
+}
+
+/* Visible on hover/focus-within on tablet+ (>=768px) */
+.taskItem:hover .actions,
+.taskItem:focus-within .actions {
+  opacity: 1;
+}
+
+.actionBtn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+  transition:
+    background var(--transition-fast),
+    opacity var(--transition-fast);
+  font-size: var(--text-sm);
+  line-height: 1;
+  color: var(--color-text-secondary);
+  flex-shrink: 0;
+}
+
+.actionBtn:hover {
+  background: var(--color-surface);
+}
+
+.deleteBtn {
+  color: var(--color-text-secondary);
+}
+
+.deleteBtn:hover {
+  color: var(--color-danger);
+}

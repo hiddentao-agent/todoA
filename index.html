@@ -1,0 +1,27 @@
+<!doctype html>
+<!--
+  data-theme="system" is the CSP-safe default.
+  JS applies the user's stored preference (todo_theme) after mount.
+  Trade-off: a brief flash of wrong theme (FOUC) is possible if the
+  stored preference differs from the OS default. This is accepted in
+  favour of CSP compliance — an inline script to read localStorage
+  before paint would require 'unsafe-inline' in script-src.
+-->
+<html lang="en" data-theme="system">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="A private, offline-first todo list" />
+    <meta name="theme-color" content="#ffffff" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; worker-src 'self'; manifest-src 'self'; base-uri 'self'; form-action 'none'"
+    />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <title>Todo</title>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

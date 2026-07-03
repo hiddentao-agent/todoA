@@ -1,0 +1,146 @@
+/* ========================================
+   KeyboardShortcutsModal Styles
+   ======================================== */
+
+/* ---- Backdrop ---- */
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: var(--color-overlay);
+  z-index: var(--z-modal-backdrop);
+  animation: fadeIn 200ms ease;
+}
+
+/* ---- Dialog ---- */
+
+.dialog {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--color-bg);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  padding: var(--space-6);
+  max-width: 480px;
+  width: calc(100% - 32px);
+  z-index: var(--z-modal);
+  outline: none;
+  animation: fadeIn 200ms ease;
+}
+
+/* ---- Header ---- */
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-4);
+}
+
+.title {
+  font-size: var(--text-lg);
+  font-weight: 600;
+  margin: 0;
+}
+
+.closeButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--color-text-secondary);
+  font-size: var(--text-lg);
+  cursor: pointer;
+  line-height: 1;
+  padding: 0;
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.closeButton:hover {
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.closeButton:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-border-focus);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/* ---- Table ---- */
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+}
+
+.tableRow {
+  border-bottom: 1px solid var(--color-border);
+}
+
+.tableRow:last-child {
+  border-bottom: none;
+}
+
+.tableCell {
+  padding: var(--space-2) var(--space-3);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.tableCell:last-child {
+  text-align: right;
+}
+
+/* ---- KBD Element ---- */
+
+kbd {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 2px 6px;
+  background: var(--color-surface);
+  line-height: var(--leading-sm);
+  white-space: nowrap;
+}
+
+/* ---- Combo key (Ctrl + Arrow etc.) ---- */
+
+kbd + span {
+  margin: 0 2px;
+  color: var(--color-text-tertiary);
+}
+
+kbd + kbd {
+  margin-left: 2px;
+}
+
+/* ---- Mobile (<480px) ---- */
+
+@media (max-width: 479px) {
+  .dialog {
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+}
+
+/* ---- Animation ---- */
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}

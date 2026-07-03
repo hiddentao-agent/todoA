@@ -1,0 +1,9 @@
+/* ========================================
+   TaskStats — Item count display
+   ======================================== */
+
+.stats {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  padding: var(--space-2) 0;
+}

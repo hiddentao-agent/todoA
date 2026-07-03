@@ -1,0 +1,144 @@
+/* ========================================
+   AddTaskForm — Mobile-first form
+   ======================================== */
+
+/* Mobile (<768px): flex column, input full width */
+.form {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.inputWrapper {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  width: 100%;
+}
+
+.input {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 8px 12px;
+  min-height: 40px;
+  width: 100%;
+  font-size: var(--text-base);
+  line-height: var(--leading-base);
+  color: var(--color-text);
+  transition: border-color var(--transition-fast);
+}
+
+.input::placeholder {
+  color: var(--color-text-tertiary);
+}
+
+.input:focus {
+  border-color: var(--color-border-focus);
+  outline: none;
+}
+
+.inputError {
+  border-color: var(--color-danger);
+}
+
+.inputError:focus {
+  border-color: var(--color-danger);
+  box-shadow: 0 0 0 1px var(--color-danger);
+}
+
+.validationError {
+  color: var(--color-danger);
+  font-size: var(--text-sm);
+  margin-top: var(--space-1);
+  line-height: var(--leading-sm);
+}
+
+.charCounter {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  font-size: var(--text-xs);
+  color: var(--color-text-tertiary);
+  line-height: 1;
+  pointer-events: none;
+}
+
+/* Mobile: date input + Add button in a flex row */
+.dateRow {
+  display: flex;
+  flex-direction: row;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.dateInput {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 8px 12px;
+  min-height: 40px;
+  flex: 1;
+  font-size: var(--text-base);
+  line-height: var(--leading-base);
+  color: var(--color-text);
+  transition: border-color var(--transition-fast);
+}
+
+.dateInput:focus {
+  border-color: var(--color-border-focus);
+  outline: none;
+}
+
+.addButton {
+  background: var(--color-primary);
+  color: var(--color-primary-text);
+  padding: 8px 16px;
+  border-radius: var(--radius-md);
+  border: none;
+  font-weight: var(--font-medium);
+  font-size: var(--text-base);
+  line-height: var(--leading-base);
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+  min-height: var(--target-touch);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.addButton:hover:not(:disabled) {
+  background: var(--color-primary-hover);
+}
+
+.addButton:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-border-focus);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/* Tablet+ (>=768px): flex row, input flex:1, date + button flex-shrink:0 */
+@media (min-width: 768px) {
+  .form {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: var(--space-2);
+  }
+
+  .inputWrapper {
+    flex: 1;
+  }
+
+  .dateRow {
+    flex-shrink: 0;
+    margin-top: 0;
+  }
+
+  .dateInput {
+    flex-shrink: 0;
+    min-width: 140px;
+    flex: none;
+  }
+
+  .addButton {
+    flex-shrink: 0;
+  }
+}

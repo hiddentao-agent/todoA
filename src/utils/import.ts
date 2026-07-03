@@ -103,9 +103,16 @@ export function processImportFile(rawText: string): ImportSuccess | ImportError 
       };
     }
 
-    // Validate completed
+    // Validate completed — handle string "true"/"false" explicitly so
+    // Boolean("false") doesn't coerce to true.
     const completed =
-      typeof record.completed === 'boolean' ? record.completed : Boolean(record.completed);
+      typeof record.completed === 'boolean'
+        ? record.completed
+        : record.completed === 'true'
+          ? true
+          : record.completed === 'false'
+            ? false
+            : Boolean(record.completed);
 
     // Validate order
     let order: number;

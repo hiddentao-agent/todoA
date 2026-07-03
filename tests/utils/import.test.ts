@@ -156,15 +156,24 @@ describe('processImportFile', () => {
     }
   });
 
-  it('coerces truthy/falsy completed', () => {
+  it('defaults completed to false for non-boolean, non-string values', () => {
+    // Boolean({}) → true and Boolean("any-non-empty") → true are over-permissive.
+    // Non-boolean, non-explicit-string values should default to false.
     const json = JSON.stringify([
       { text: 'A', completed: 1, order: 0, createdAt: 0 },
       { text: 'B', completed: 0, order: 1000, createdAt: 0 },
+      { text: 'C', completed: {}, order: 2000, createdAt: 0 },
+      { text: 'D', completed: [], order: 3000, createdAt: 0 },
+      { text: 'E', completed: 'non-empty', order: 4000, createdAt: 0 },
     ]);
     const result = processImportFile(json);
     if ('todos' in result) {
-      expect(result.todos[0].completed).toBe(true);
-      expect(result.todos[1].completed).toBe(false);
+      // All non-boolean, non-explicit-string values → false
+      expect(result.todos[0].completed).toBe(false); // number 1
+      expect(result.todos[1].completed).toBe(false); // number 0
+      expect(result.todos[2].completed).toBe(false); // object {}
+      expect(result.todos[3].completed).toBe(false); // array []
+      expect(result.todos[4].completed).toBe(false); // string "non-empty"
     }
   });
 

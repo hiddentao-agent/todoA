@@ -112,7 +112,7 @@ export function processImportFile(rawText: string): ImportSuccess | ImportError 
           ? true
           : record.completed === 'false'
             ? false
-            : Boolean(record.completed);
+            : false;
 
     // Validate order
     let order: number;

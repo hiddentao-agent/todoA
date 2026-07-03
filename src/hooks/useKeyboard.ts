@@ -28,7 +28,7 @@ export function useKeyboard(actions: KeyboardActions): void {
       }
 
       // ? — open keyboard shortcuts modal (only when not typing)
-      if (e.key === '?' && !e.shiftKey && !isInput && actions.onShortcutsOpen) {
+      if (e.key === '?' && !isInput && actions.onShortcutsOpen) {
         e.preventDefault();
         actions.onShortcutsOpen();
         return;

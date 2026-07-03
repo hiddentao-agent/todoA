@@ -147,27 +147,11 @@ export function App() {
   // Storage unavailable error screen
   if (error) {
     return (
-      <div
-        class={styles.appContainer}
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          minHeight: '100dvh',
-        }}
-      >
-        <div style={{ textAlign: 'center', padding: 'var(--space-8)' }}>
-          <div style={{ fontSize: '3rem', marginBottom: 'var(--space-4)' }}>⚠</div>
-          <h1
-            style={{
-              fontSize: 'var(--text-xl)',
-              marginBottom: 'var(--space-3)',
-              color: 'var(--color-text)',
-            }}
-          >
-            Storage Unavailable
-          </h1>
-          <p style={{ color: 'var(--color-text-secondary)', maxWidth: '400px' }}>
+      <div class={styles.errorScreen}>
+        <div class={styles.errorContent}>
+          <div class={styles.errorIcon}>⚠</div>
+          <h1 class={styles.errorTitle}>Storage Unavailable</h1>
+          <p class={styles.errorMessage}>
             Your browser&apos;s storage is unavailable. Please enable IndexedDB and reload.
           </p>
         </div>

@@ -18,7 +18,7 @@ export function AddTaskForm({ disabled }: AddTaskFormProps) {
   const [dueDate, setDueDate] = useState('');
   const [validationError, setValidationError] = useState<string | null>(null);
 
-  const isDisabled = disabled ?? importing;
+  const isDisabled = disabled || importing;
   const charsRemaining = MAX_LENGTH - text.length;
 
   // Auto-focus the task input on mount (replaces autoFocus attribute for a11y)

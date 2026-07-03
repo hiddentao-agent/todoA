@@ -61,10 +61,12 @@ describe('TaskItem', () => {
     expect(screen.getByLabelText("Delete 'Buy milk'")).toBeInTheDocument();
   });
 
-  it('escapes single quotes in aria-labels', () => {
+  it('renders single quotes directly in aria-labels', () => {
     const todoWithQuote = { ...baseTodo, text: "Don't forget" };
     render(<TaskItem todo={todoWithQuote} index={0} totalCount={1} />);
-    expect(screen.getByLabelText("Mark 'Don&#39;t forget' complete")).toBeInTheDocument();
+    // Preact JSX handles attribute escaping — HTML entities in DOM attributes
+    // are not parsed by screen readers, so quotes stay as raw characters.
+    expect(screen.getByLabelText("Mark 'Don't forget' complete")).toBeInTheDocument();
   });
 
   it('calls toggleTodo on checkbox click', () => {

@@ -264,12 +264,11 @@ export default function TaskItem({
 
   // ---- Derived ----
 
-  // Escape single quotes for aria attributes
-  const escapedText = todo.text.replace(/'/g, '&#39;');
-  const checkboxLabel = `Mark '${escapedText}' ${todo.completed ? 'incomplete' : 'complete'}`;
-  const deleteLabel = `Delete '${escapedText}'`;
-  const moveUpLabel = `Move '${escapedText}' up`;
-  const moveDownLabel = `Move '${escapedText}' down`;
+  // Single quotes are safe in DOM attributes — Preact's JSX handles escaping
+  const checkboxLabel = `Mark '${todo.text}' ${todo.completed ? 'incomplete' : 'complete'}`;
+  const deleteLabel = `Delete '${todo.text}'`;
+  const moveUpLabel = `Move '${todo.text}' up`;
+  const moveDownLabel = `Move '${todo.text}' down`;
 
   // Guard: require an id to be usable
   if (todo.id === undefined) {

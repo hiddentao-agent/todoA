@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/preact';
+import { render, screen, fireEvent, waitFor } from '@testing-library/preact';
 import { axe } from 'vitest-axe';
 import { App } from '@/App';
 
@@ -145,6 +145,11 @@ describe('App', () => {
     expect(screen.getByText('Storage Unavailable')).toBeInTheDocument();
     expect(screen.getByText(/browser.*storage.*unavailable/i)).toBeInTheDocument();
     expect(screen.queryByLabelText('New task description')).not.toBeInTheDocument();
+    // Verify error screen uses CSS modules, not inline styles
+    const errorContainer = container.querySelector('[class*="errorScreen"]');
+    expect(errorContainer).toBeInTheDocument();
+    // Error screen should NOT have inline display:flex override
+    expect((errorContainer as HTMLElement)?.style?.display).not.toBe('flex');
   });
 
   it('renders empty state when no todos exist', async () => {
@@ -270,5 +275,190 @@ describe('App', () => {
     render(<App />);
     expect(screen.getByText('Nothing completed yet')).toBeInTheDocument();
     expect(screen.getByText('Complete a task to see it here')).toBeInTheDocument();
+  });
+
+  // ---- Import flow ----
+
+  it('shows toast on import file size validation error', async () => {
+    mockLoading = false;
+    const { validateFileSize } = await import('@/utils/import');
+    vi.mocked(validateFileSize).mockReturnValue({ message: 'File too large (max 2 MB).' });
+
+    const { container } = render(<App />);
+
+    // Open settings and trigger import via file input
+    fireEvent.click(screen.getByLabelText('Settings'));
+    const fileInput = container.querySelector<HTMLInputElement>('input[type="file"]')!;
+    const file = new File(['{}'], 'large.json', { type: 'application/json' });
+    fireEvent.change(fileInput, { target: { files: [file] } });
+
+    expect(screen.getByText(/File too large/)).toBeInTheDocument();
+  });
+
+  it('shows toast on import parse error', async () => {
+    mockLoading = false;
+    const { validateFileSize, processImportFile } = await import('@/utils/import');
+    vi.mocked(validateFileSize).mockReturnValue(null);
+    vi.mocked(processImportFile).mockReturnValue({ message: 'Invalid JSON content.' });
+
+    const { container } = render(<App />);
+
+    fireEvent.click(screen.getByLabelText('Settings'));
+    const fileInput = container.querySelector<HTMLInputElement>('input[type="file"]')!;
+    const file = new File(['{invalid}'], 'bad.json', { type: 'application/json' });
+    fireEvent.change(fileInput, { target: { files: [file] } });
+
+    await waitFor(() => {
+      expect(screen.getByText(/Invalid JSON content/)).toBeInTheDocument();
+    });
+  });
+
+  it('successfully imports tasks after confirmation', async () => {
+    mockLoading = false;
+    const { validateFileSize, processImportFile } = await import('@/utils/import');
+    vi.mocked(validateFileSize).mockReturnValue(null);
+    vi.mocked(processImportFile).mockReturnValue({
+      todos: [
+        { text: 'Imported task', completed: false, order: 1000, dueDate: null, createdAt: 1000 },
+      ],
+    });
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+    const { container } = render(<App />);
+
+    fireEvent.click(screen.getByLabelText('Settings'));
+    const fileInput = container.querySelector<HTMLInputElement>('input[type="file"]')!;
+    const file = new File(
+      [
+        '{"todos":[{"text":"Imported task","completed":false,"order":1000,"dueDate":null,"createdAt":1000}]}',
+      ],
+      'todos.json',
+      { type: 'application/json' },
+    );
+    fireEvent.change(fileInput, { target: { files: [file] } });
+
+    await waitFor(() => {
+      expect(mockImportTodos).toHaveBeenCalled();
+      expect(screen.getByText(/Imported 1 task/)).toBeInTheDocument();
+    });
+  });
+
+  it('does not import when user cancels confirmation', async () => {
+    mockLoading = false;
+    const { validateFileSize, processImportFile } = await import('@/utils/import');
+    vi.mocked(validateFileSize).mockReturnValue(null);
+    vi.mocked(processImportFile).mockReturnValue({
+      todos: [
+        { text: 'Imported task', completed: false, order: 1000, dueDate: null, createdAt: 1000 },
+      ],
+    });
+    vi.spyOn(window, 'confirm').mockReturnValue(false);
+
+    const { container } = render(<App />);
+
+    fireEvent.click(screen.getByLabelText('Settings'));
+    const fileInput = container.querySelector<HTMLInputElement>('input[type="file"]')!;
+    const file = new File(['{}'], 'todos.json', { type: 'application/json' });
+    fireEvent.change(fileInput, { target: { files: [file] } });
+
+    await waitFor(() => {
+      // FileReader fires, processImportFile is called, confirm returns false
+      expect(mockImportTodos).not.toHaveBeenCalled();
+    });
+  });
+
+  it('shows toast when importTodos throws', async () => {
+    mockLoading = false;
+    const { validateFileSize, processImportFile } = await import('@/utils/import');
+    vi.mocked(validateFileSize).mockReturnValue(null);
+    vi.mocked(processImportFile).mockReturnValue({
+      todos: [
+        { text: 'Imported task', completed: false, order: 1000, dueDate: null, createdAt: 1000 },
+      ],
+    });
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    // Set importTodos to reject BEFORE render so the component captures the throwing version
+    mockImportTodos.mockImplementation(() => Promise.reject(new Error('DB error')));
+
+    const { container } = render(<App />);
+
+    fireEvent.click(screen.getByLabelText('Settings'));
+    const fileInput = container.querySelector<HTMLInputElement>('input[type="file"]')!;
+    const file = new File(['{}'], 'todos.json', { type: 'application/json' });
+    fireEvent.change(fileInput, { target: { files: [file] } });
+
+    await waitFor(() => {
+      expect(screen.getByText(/Import failed/)).toBeInTheDocument();
+    });
+
+    // Restore default behavior
+    mockImportTodos.mockResolvedValue(undefined);
+  });
+
+  it('shows toast on FileReader error', async () => {
+    mockLoading = false;
+    const { validateFileSize } = await import('@/utils/import');
+    vi.mocked(validateFileSize).mockReturnValue(null);
+
+    // Mock FileReader to trigger error
+    const originalFileReader = globalThis.FileReader;
+    const mockReader = {
+      onload: null as ((e: ProgressEvent<FileReader>) => void) | null,
+      onerror: null as ((e: ProgressEvent<FileReader>) => void) | null,
+      readAsText: vi.fn(function (this: typeof mockReader) {
+        // Fire the error event
+        Promise.resolve().then(() => {
+          this.onerror?.(new ProgressEvent('error') as ProgressEvent<FileReader>);
+        });
+      }),
+      result: null,
+    } as unknown as FileReader;
+    vi.stubGlobal(
+      'FileReader',
+      vi.fn(() => mockReader),
+    );
+
+    const { container } = render(<App />);
+
+    fireEvent.click(screen.getByLabelText('Settings'));
+    const fileInput = container.querySelector<HTMLInputElement>('input[type="file"]')!;
+    const file = new File(['{}'], 'todos.json', { type: 'application/json' });
+    fireEvent.change(fileInput, { target: { files: [file] } });
+
+    await waitFor(() => {
+      expect(screen.getByText(/Failed to read file/)).toBeInTheDocument();
+    });
+
+    vi.stubGlobal('FileReader', originalFileReader);
+  });
+
+  // ---- Search input renders in toolbar ----
+
+  it('renders search input when todos are loaded', () => {
+    mockLoading = false;
+    mockTodos = [
+      { id: 1, text: 'Task', completed: false, order: 1000, dueDate: null, createdAt: 1000 },
+    ];
+    render(<App />);
+
+    // SearchInput renders a text input with aria-label "Search tasks"
+    expect(screen.getByLabelText('Search tasks')).toBeInTheDocument();
+  });
+
+  // ---- Export with real db data ----
+
+  it('exports all tasks from db', async () => {
+    mockLoading = false;
+    mockTodos = [
+      { id: 1, text: 'Task A', completed: false, order: 1000, dueDate: null, createdAt: 1000 },
+    ];
+    render(<App />);
+
+    fireEvent.click(screen.getByLabelText('Settings'));
+    fireEvent.click(screen.getByText('Export'));
+
+    const exportMock = await import('@/utils/export');
+    expect(exportMock.downloadJson).toHaveBeenCalled();
+    expect(exportMock.serializeTodos).toHaveBeenCalled();
   });
 });

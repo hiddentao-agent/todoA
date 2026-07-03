@@ -1,0 +1,35 @@
+# Cache-Control headers for Netlify / Cloudflare Pages
+#
+# Strategy:
+# - Hashed assets: immutable content, cache aggressively (1 year)
+# - HTML app shell: never cache (must always be fresh for SW update detection)
+# - Service worker: never cache (must be fresh to detect updates per spec)
+# - Manifest/icons: moderate cache
+
+# Hashed JS, CSS, and workbox bundles — content-hash in filename guarantees cache-busting
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Service worker — must be fetched fresh every time
+/sw.js
+  Cache-Control: public, max-age=0, must-revalidate
+
+# Workbox runtime at root (precached by vite-plugin-pwa)
+/workbox-*.js
+  Cache-Control: public, max-age=31536000, immutable
+
+# App shell HTML — no cache; always fetch latest for SW update detection
+/index.html
+  Cache-Control: public, max-age=0, must-revalidate
+
+# PWA manifest — cache briefly; infrequent changes
+/manifest.webmanifest
+  Cache-Control: public, max-age=3600
+
+# PWA icons — immutable by content
+/icon-*.png
+  Cache-Control: public, max-age=31536000, immutable
+
+# Robots.txt — cache for a day
+/robots.txt
+  Cache-Control: public, max-age=86400

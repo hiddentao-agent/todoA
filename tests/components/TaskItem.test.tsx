@@ -223,6 +223,59 @@ describe('TaskItem', () => {
     expect(screen.getByDisplayValue('Buy milk')).toBeInTheDocument();
   });
 
+  // ---- Ctrl+Arrow keyboard shortcuts (spec §8.1) ----
+
+  it('calls onMoveUp on Ctrl+ArrowUp', () => {
+    const onMoveUp = vi.fn();
+    render(<TaskItem todo={baseTodo} index={1} totalCount={3} onMoveUp={onMoveUp} />);
+    const item = screen.getByTestId('task-item-1');
+    fireEvent.keyDown(item, { key: 'ArrowUp', ctrlKey: true });
+    expect(onMoveUp).toHaveBeenCalledWith(1);
+  });
+
+  it('calls onMoveDown on Ctrl+ArrowDown', () => {
+    const onMoveDown = vi.fn();
+    render(<TaskItem todo={baseTodo} index={0} totalCount={3} onMoveDown={onMoveDown} />);
+    const item = screen.getByTestId('task-item-1');
+    fireEvent.keyDown(item, { key: 'ArrowDown', ctrlKey: true });
+    expect(onMoveDown).toHaveBeenCalledWith(1);
+  });
+
+  it('does not trigger move on Ctrl+Arrow when editing', () => {
+    const onMoveUp = vi.fn();
+    render(<TaskItem todo={baseTodo} index={1} totalCount={3} onMoveUp={onMoveUp} />);
+    fireEvent.dblClick(screen.getByText('Buy milk'));
+
+    const item = screen.getByTestId('task-item-1');
+    fireEvent.keyDown(item, { key: 'ArrowUp', ctrlKey: true });
+    expect(onMoveUp).not.toHaveBeenCalled();
+  });
+
+  it('does not trigger move on Ctrl+Arrow when disabled', () => {
+    mockImporting = true;
+    const onMoveUp = vi.fn();
+    render(<TaskItem todo={baseTodo} index={1} totalCount={3} onMoveUp={onMoveUp} />);
+    const item = screen.getByTestId('task-item-1');
+    fireEvent.keyDown(item, { key: 'ArrowUp', ctrlKey: true });
+    expect(onMoveUp).not.toHaveBeenCalled();
+  });
+
+  it('does not trigger move on Ctrl+Arrow without ctrlKey', () => {
+    const onMoveUp = vi.fn();
+    render(<TaskItem todo={baseTodo} index={1} totalCount={3} onMoveUp={onMoveUp} />);
+    const item = screen.getByTestId('task-item-1');
+    fireEvent.keyDown(item, { key: 'ArrowUp', ctrlKey: false });
+    expect(onMoveUp).not.toHaveBeenCalled();
+  });
+
+  it('does not trigger move on Alt+Arrow', () => {
+    const onMoveUp = vi.fn();
+    render(<TaskItem todo={baseTodo} index={1} totalCount={3} onMoveUp={onMoveUp} />);
+    const item = screen.getByTestId('task-item-1');
+    fireEvent.keyDown(item, { key: 'ArrowUp', ctrlKey: true, altKey: true });
+    expect(onMoveUp).not.toHaveBeenCalled();
+  });
+
   it('does not toggle on Space when editing', () => {
     render(<TaskItem todo={baseTodo} index={0} totalCount={1} />);
     fireEvent.dblClick(screen.getByText('Buy milk'));

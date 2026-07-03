@@ -239,6 +239,20 @@ export default function TaskItem({
     (e: KeyboardEvent) => {
       if (isDisabled || editing) return;
 
+      // Ctrl+ArrowUp / Ctrl+ArrowDown: move task (spec §8.1)
+      if (e.ctrlKey && !e.metaKey && !e.altKey) {
+        if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          handleMoveUp();
+          return;
+        }
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          handleMoveDown();
+          return;
+        }
+      }
+
       switch (e.key) {
         case ' ':
           e.preventDefault();
@@ -259,7 +273,16 @@ export default function TaskItem({
           break;
       }
     },
-    [isDisabled, editing, todo.id, toggleTodo, handleDelete, startEditing],
+    [
+      isDisabled,
+      editing,
+      todo.id,
+      toggleTodo,
+      handleDelete,
+      startEditing,
+      handleMoveUp,
+      handleMoveDown,
+    ],
   );
 
   // ---- Derived ----

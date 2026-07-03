@@ -175,13 +175,13 @@ describe('TodoStore', () => {
     });
 
     it('sets error when loadTodos fails', async () => {
-      // Temporarily break the toArray mock
-
       const db = await import('@/db');
       const { db: mockDb } = db;
-      const originalImpl = mockDb.todos.orderBy().toArray;
+      const todosMock = mockDb.todos as unknown as Record<string, unknown>;
+      const orderByMock = todosMock['orderBy'] as () => Record<string, unknown>;
+      const originalImpl = orderByMock()['toArray'];
 
-      mockDb.todos.orderBy().toArray = vi.fn().mockRejectedValue(new Error('DB error'));
+      orderByMock()['toArray'] = vi.fn().mockRejectedValue(new Error('DB error'));
 
       useTodoStore.setState({ todos: [], loading: true, error: null });
       await useTodoStore.getState().loadTodos();
@@ -190,15 +190,17 @@ describe('TodoStore', () => {
       expect(state.error).toBe('DB error');
 
       // Restore
-      mockDb.todos.orderBy().toArray = originalImpl;
+      orderByMock()['toArray'] = originalImpl;
     });
 
     it('sets generic error message when non-Error is thrown', async () => {
       const db = await import('@/db');
       const { db: mockDb } = db;
-      const originalImpl = mockDb.todos.orderBy().toArray;
+      const todosMock = mockDb.todos as unknown as Record<string, unknown>;
+      const orderByMock = todosMock['orderBy'] as () => Record<string, unknown>;
+      const originalImpl = orderByMock()['toArray'];
 
-      mockDb.todos.orderBy().toArray = vi.fn().mockRejectedValue('string error');
+      orderByMock()['toArray'] = vi.fn().mockRejectedValue('string error');
 
       useTodoStore.setState({ todos: [], loading: true, error: null });
       await useTodoStore.getState().loadTodos();
@@ -206,7 +208,7 @@ describe('TodoStore', () => {
       expect(state.error).toBe('Failed to load tasks');
 
       // Restore
-      mockDb.todos.orderBy().toArray = originalImpl;
+      orderByMock()['toArray'] = originalImpl;
     });
   });
 
@@ -376,18 +378,22 @@ describe('TodoStore', () => {
     async function withMockError(
       methodName: 'add' | 'update' | 'delete' | 'bulkDelete' | 'bulkAdd',
       rejectValue: unknown,
-      action: () => Promise<void>,
+      action: () => Promise<unknown>,
       expectedError: string,
     ) {
       const db = await import('@/db');
       const { db: mockDb } = db;
-      const original = mockDb.todos[methodName];
+      const original = mockDb.todos[methodName] as unknown;
       try {
-        mockDb.todos[methodName] = vi.fn().mockRejectedValue(rejectValue);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (mockDb.todos as unknown as Record<string, unknown>)[methodName] = vi
+          .fn()
+          .mockRejectedValue(rejectValue);
         await action();
         expect(useTodoStore.getState().error).toBe(expectedError);
       } finally {
-        mockDb.todos[methodName] = original;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (mockDb.todos as unknown as Record<string, unknown>)[methodName] = original;
       }
     }
 

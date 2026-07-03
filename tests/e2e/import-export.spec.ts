@@ -38,8 +38,20 @@ test.describe('Import & Export', () => {
     await expect(page.getByText('Old task')).toBeVisible();
 
     const importData = JSON.stringify([
-      { text: 'Imported task 1', completed: false, order: 1000, dueDate: null, createdAt: Date.now() },
-      { text: 'Imported task 2', completed: true, order: 2000, dueDate: null, createdAt: Date.now() },
+      {
+        text: 'Imported task 1',
+        completed: false,
+        order: 1000,
+        dueDate: null,
+        createdAt: Date.now(),
+      },
+      {
+        text: 'Imported task 2',
+        completed: true,
+        order: 2000,
+        dueDate: null,
+        createdAt: Date.now(),
+      },
     ]);
 
     page.on('dialog', (dialog) => {
@@ -74,7 +86,13 @@ test.describe('Import & Export', () => {
 
   test('import of file with HTML in task text is rejected', async ({ page }) => {
     const importData = JSON.stringify([
-      { text: '<script>alert("xss")</script>', completed: false, order: 1000, dueDate: null, createdAt: Date.now() },
+      {
+        text: '<script>alert("xss")</script>',
+        completed: false,
+        order: 1000,
+        dueDate: null,
+        createdAt: Date.now(),
+      },
     ]);
 
     await page.getByLabel('Settings').click();

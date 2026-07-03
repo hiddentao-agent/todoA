@@ -81,10 +81,14 @@ describe('TaskList', () => {
 
     beforeEach(() => {
       rafCalls = [];
-      rafSpy = vi.spyOn(window, 'requestAnimationFrame').mockImplementation((cb) => {
+      // Cast through unknown because requestAnimationFrame has overloads that don't
+      // match vitest's spy type for overloaded functions.
+      rafSpy = vi.spyOn(window, 'requestAnimationFrame').mockImplementation(((
+        cb: FrameRequestCallback,
+      ): number => {
         rafCalls.push(cb);
         return rafCalls.length;
-      });
+      }) as unknown as (...args: unknown[]) => number) as unknown as ReturnType<typeof vi.spyOn>;
     });
 
     afterEach(() => {

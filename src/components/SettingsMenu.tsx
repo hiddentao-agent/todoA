@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'preact/hooks';
+import { getFocusableElements } from '@/utils/focus';
 import styles from './SettingsMenu.module.css';
 
 interface SettingsMenuProps {
@@ -13,6 +14,7 @@ export function SettingsMenu({ onExport, onImport, onShortcutsOpen }: SettingsMe
   const triggerRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
 
   const close = useCallback(() => {
     setOpen(false);
@@ -74,6 +76,59 @@ export function SettingsMenu({ onExport, onImport, onShortcutsOpen }: SettingsMe
       document.removeEventListener('click', handleClickOutside);
     };
   }, [open, close]);
+
+  // Focus trap for About dialog
+  useEffect(() => {
+    if (!showAbout) return;
+
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+    const dialog = dialogRef.current;
+    if (dialog) {
+      const focusable = getFocusableElements(dialog);
+      if (focusable.length > 0) {
+        focusable[0].focus();
+      } else {
+        dialog.focus();
+      }
+    }
+
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setShowAbout(false);
+        return;
+      }
+
+      if (e.key === 'Tab' && dialog) {
+        const focusable = getFocusableElements(dialog);
+        if (focusable.length === 0) return;
+
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+
+        if (e.shiftKey) {
+          if (document.activeElement === first) {
+            e.preventDefault();
+            last.focus();
+          }
+        } else {
+          if (document.activeElement === last) {
+            e.preventDefault();
+            first.focus();
+          }
+        }
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      if (previouslyFocused && typeof previouslyFocused.focus === 'function') {
+        previouslyFocused.focus();
+      }
+    };
+  }, [showAbout]);
 
   const handleExport = useCallback(() => {
     onExport();
@@ -166,7 +221,7 @@ export function SettingsMenu({ onExport, onImport, onShortcutsOpen }: SettingsMe
           class={styles.backdrop}
           onClick={() => setShowAbout(false)}
           onKeyDown={(e: KeyboardEvent) => {
-            if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') {
+            if (e.key === 'Enter' || e.key === ' ') {
               e.preventDefault();
               setShowAbout(false);
             }
@@ -177,12 +232,14 @@ export function SettingsMenu({ onExport, onImport, onShortcutsOpen }: SettingsMe
         >
           {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
           <div
+            ref={dialogRef}
             class={styles.aboutDialog}
             role="dialog"
             aria-modal="true"
             aria-labelledby="about-title"
             onClick={(e: MouseEvent) => e.stopPropagation()}
             onKeyDown={(e: KeyboardEvent) => e.stopPropagation()}
+            tabIndex={-1}
           >
             <h2 id="about-title" class={styles.aboutTitle}>
               About

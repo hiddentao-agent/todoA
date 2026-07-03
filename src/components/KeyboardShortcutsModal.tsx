@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'preact/hooks';
+import { getFocusableElements } from '@/utils/focus';
 import styles from './KeyboardShortcutsModal.module.css';
 
 interface KeyboardShortcutsModalProps {
@@ -149,16 +150,5 @@ export default function KeyboardShortcutsModal({ onClose }: KeyboardShortcutsMod
         </table>
       </div>
     </div>
-  );
-}
-
-/**
- * Returns all focusable elements within a container.
- */
-function getFocusableElements(container: HTMLElement): HTMLElement[] {
-  return Array.from(
-    container.querySelectorAll<HTMLElement>(
-      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
-    ),
   );
 }

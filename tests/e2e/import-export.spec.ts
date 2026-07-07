@@ -1,20 +1,18 @@
 import { test, expect } from '@playwright/test';
+import { setupCleanApp, clickTaskCheckbox, DB_WRITE_DELAY } from './helpers';
 
 /** Encode a string as bytes for Playwright's setFiles FilePayload. */
 function strToPayload(name: string, content: string, mimeType = 'application/json') {
   return {
     name,
     mimeType,
-    // Playwright's FilePayload.buffer is typed as Buffer, but Uint8Array works at runtime.
-    buffer: new TextEncoder().encode(content) as unknown as Buffer,
+    buffer: Buffer.from(content, 'utf-8'),
   };
 }
 
 test.describe('Import & Export', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/');
-    await page.evaluate(() => indexedDB.deleteDatabase('TodoApp'));
-    await page.reload();
+    await setupCleanApp(page);
   });
 
   test('export downloads a file with correct naming pattern', async ({ page }) => {
@@ -110,11 +108,14 @@ test.describe('Import & Export', () => {
     const input = page.getByLabel('New task description');
     await input.fill('Task Alpha');
     await input.press('Enter');
+    await page.waitForTimeout(DB_WRITE_DELAY);
     await input.fill('Task Beta');
     await input.press('Enter');
+    await page.waitForTimeout(DB_WRITE_DELAY);
 
-    // Complete the second task
-    await page.getByLabel("Mark 'Task Beta' complete").click();
+    // Complete the second task via the visible label wrapper
+    await clickTaskCheckbox(page, 'Task Beta');
+    await page.waitForTimeout(DB_WRITE_DELAY);
 
     // Export
     await page.getByLabel('Settings').click();

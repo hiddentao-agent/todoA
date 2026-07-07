@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { setupCleanApp, clickTaskCheckbox, DB_WRITE_DELAY } from './helpers';
 
 /** Encode a string as bytes for Playwright's setFiles FilePayload. */
 function strToPayload(name: string, content: string, mimeType = 'application/json') {
@@ -11,19 +12,7 @@ function strToPayload(name: string, content: string, mimeType = 'application/jso
 
 test.describe('Import & Export', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/');
-    await page.evaluate(
-      () =>
-        new Promise<void>((resolve) => {
-          const req = indexedDB.deleteDatabase('TodoApp');
-          req.onsuccess = () => resolve();
-          req.onerror = () => resolve();
-          req.onblocked = () => resolve();
-        }),
-    );
-    await page.reload();
-    // Wait for app to fully initialize
-    await page.waitForSelector('[aria-label="New task description"]');
+    await setupCleanApp(page);
   });
 
   test('export downloads a file with correct naming pattern', async ({ page }) => {
@@ -119,18 +108,14 @@ test.describe('Import & Export', () => {
     const input = page.getByLabel('New task description');
     await input.fill('Task Alpha');
     await input.press('Enter');
-    await page.waitForTimeout(150);
+    await page.waitForTimeout(DB_WRITE_DELAY);
     await input.fill('Task Beta');
     await input.press('Enter');
-    await page.waitForTimeout(150);
+    await page.waitForTimeout(DB_WRITE_DELAY);
 
     // Complete the second task via the visible label wrapper
-    const checkboxLabel = page
-      .locator('label')
-      .filter({ has: page.locator('input[aria-label="Mark \'Task Beta\' complete"]') })
-      .first();
-    await checkboxLabel.click();
-    await page.waitForTimeout(150);
+    await clickTaskCheckbox(page, 'Task Beta');
+    await page.waitForTimeout(DB_WRITE_DELAY);
 
     // Export
     await page.getByLabel('Settings').click();

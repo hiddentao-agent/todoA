@@ -1,21 +1,9 @@
 import { test, expect } from '@playwright/test';
+import { setupCleanApp, DB_WRITE_DELAY } from './helpers';
 
 test.describe('Offline', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/');
-    // Clear IndexedDB for a clean state
-    await page.evaluate(
-      () =>
-        new Promise<void>((resolve) => {
-          const req = indexedDB.deleteDatabase('TodoApp');
-          req.onsuccess = () => resolve();
-          req.onerror = () => resolve();
-          req.onblocked = () => resolve();
-        }),
-    );
-    await page.reload();
-    // Wait for app to fully initialize
-    await page.waitForSelector('[aria-label="New task description"]');
+    await setupCleanApp(page);
   });
 
   test('shows offline banner when network is disconnected', async ({ page }) => {
@@ -65,7 +53,7 @@ test.describe('Offline', () => {
     // Go back online — this resets the dismissed state
     await page.context().setOffline(false);
     await page.evaluate(() => window.dispatchEvent(new Event('online')));
-    await page.waitForTimeout(100);
+    await page.waitForTimeout(DB_WRITE_DELAY);
 
     // Go offline again
     await page.context().setOffline(true);

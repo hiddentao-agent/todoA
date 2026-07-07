@@ -1,21 +1,11 @@
 import { test, expect } from '@playwright/test';
+import { setupCleanApp, DB_WRITE_DELAY } from './helpers';
 
 test.describe('Theming', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/');
-    await page.evaluate(
-      () =>
-        new Promise<void>((resolve) => {
-          const req = indexedDB.deleteDatabase('TodoApp');
-          req.onsuccess = () => resolve();
-          req.onerror = () => resolve();
-          req.onblocked = () => resolve();
-        }),
-    );
-    await page.reload();
-    // Wait for app to fully initialize — after SSR the effects need time to settle
-    await page.waitForSelector('[aria-label="New task description"]');
-    await page.waitForTimeout(100);
+    await setupCleanApp(page);
+    // After SSR the effects need time to settle
+    await page.waitForTimeout(DB_WRITE_DELAY);
   });
 
   test('theme toggle cycles through light, dark, and system preference', async ({ page }) => {

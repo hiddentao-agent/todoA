@@ -1,32 +1,21 @@
 import { test, expect } from '@playwright/test';
+import { setupCleanApp, DB_WRITE_DELAY } from './helpers';
 
 test.describe('Drag & Drop Reorder', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/');
-    await page.evaluate(
-      () =>
-        new Promise<void>((resolve) => {
-          const req = indexedDB.deleteDatabase('TodoApp');
-          req.onsuccess = () => resolve();
-          req.onerror = () => resolve();
-          req.onblocked = () => resolve();
-        }),
-    );
-    await page.reload();
-    // Wait for app to fully initialize
-    await page.waitForSelector('[aria-label="New task description"]');
+    await setupCleanApp(page);
 
     // Add several tasks to test reordering
     const input = page.getByLabel('New task description');
     await input.fill('First task');
     await input.press('Enter');
-    await page.waitForTimeout(150);
+    await page.waitForTimeout(DB_WRITE_DELAY);
     await input.fill('Second task');
     await input.press('Enter');
-    await page.waitForTimeout(150);
+    await page.waitForTimeout(DB_WRITE_DELAY);
     await input.fill('Third task');
     await input.press('Enter');
-    await page.waitForTimeout(150);
+    await page.waitForTimeout(DB_WRITE_DELAY);
   });
 
   test('tasks are created in correct order', async ({ page }) => {

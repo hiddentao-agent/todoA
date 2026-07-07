@@ -1,40 +1,31 @@
 import { test, expect } from '@playwright/test';
+import {
+  setupCleanApp,
+  clickTaskCheckbox,
+  DB_WRITE_DELAY,
+  DEBOUNCE_DELAY,
+  RELOAD_DELAY,
+} from './helpers';
 
 test.describe('Filter, Search & Sort', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/');
-    await page.evaluate(
-      () =>
-        new Promise<void>((resolve) => {
-          const req = indexedDB.deleteDatabase('TodoApp');
-          req.onsuccess = () => resolve();
-          req.onerror = () => resolve();
-          req.onblocked = () => resolve();
-        }),
-    );
-    await page.reload();
-    // Wait for app to fully initialize
-    await page.waitForSelector('[aria-label="New task description"]');
+    await setupCleanApp(page);
 
     // Add some test tasks
     const input = page.getByLabel('New task description');
     await input.fill('Buy milk');
     await input.press('Enter');
-    await page.waitForTimeout(150);
+    await page.waitForTimeout(DB_WRITE_DELAY);
     await input.fill('Walk the dog');
     await input.press('Enter');
-    await page.waitForTimeout(150);
+    await page.waitForTimeout(DB_WRITE_DELAY);
     await input.fill('Write code');
     await input.press('Enter');
-    await page.waitForTimeout(150);
+    await page.waitForTimeout(DB_WRITE_DELAY);
 
     // Complete the first task via the visible label wrapper
-    const checkboxLabel = page
-      .locator('label')
-      .filter({ has: page.locator('input[aria-label="Mark \'Buy milk\' complete"]') })
-      .first();
-    await checkboxLabel.click();
-    await page.waitForTimeout(100);
+    await clickTaskCheckbox(page, 'Buy milk');
+    await page.waitForTimeout(DB_WRITE_DELAY);
   });
 
   test('filter tabs filter tasks correctly', async ({ page }) => {
@@ -68,7 +59,7 @@ test.describe('Filter, Search & Sort', () => {
     const searchInput = page.getByLabel('Search tasks');
     await searchInput.fill('milk');
     // Wait for debounce
-    await page.waitForTimeout(200);
+    await page.waitForTimeout(DEBOUNCE_DELAY);
 
     await expect(page.getByText('Buy milk')).toBeVisible();
     await expect(page.getByText('Walk the dog')).not.toBeVisible();
@@ -78,12 +69,12 @@ test.describe('Filter, Search & Sort', () => {
   test('clear search restores all tasks', async ({ page }) => {
     const searchInput = page.getByLabel('Search tasks');
     await searchInput.fill('milk');
-    await page.waitForTimeout(200);
+    await page.waitForTimeout(DEBOUNCE_DELAY);
 
     // Clear by clicking the clear button (✕)
     await page.locator('button[aria-label="Clear search"]').click();
     // Wait for the search to clear and the list to re-render fully
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(RELOAD_DELAY);
 
     await expect(page.getByText('Buy milk')).toBeVisible();
     await expect(page.getByText('Walk the dog')).toBeVisible();
@@ -96,7 +87,7 @@ test.describe('Filter, Search & Sort', () => {
 
     const searchInput = page.getByLabel('Search tasks');
     await searchInput.fill('milk');
-    await page.waitForTimeout(200);
+    await page.waitForTimeout(DEBOUNCE_DELAY);
 
     // milk is completed, so shouldn't show under Active filter
     await expect(page.getByText('Buy milk')).not.toBeVisible();
@@ -105,7 +96,7 @@ test.describe('Filter, Search & Sort', () => {
   test('no search results shows empty state', async ({ page }) => {
     const searchInput = page.getByLabel('Search tasks');
     await searchInput.fill('zzz_nonexistent');
-    await page.waitForTimeout(200);
+    await page.waitForTimeout(DEBOUNCE_DELAY);
 
     await expect(page.getByText(/No tasks match/)).toBeVisible();
   });

@@ -20,11 +20,11 @@ test.describe('PWA', () => {
       }
       return false;
     });
-    // In dev mode, the SW may not register — that's acceptable.
-    // The test verifies the registration path exists, not that it completed.
-    if (hasSW) {
-      expect(hasSW).toBe(true);
+    // Skip in dev mode where SW is not served by Vite
+    if (!hasSW) {
+      test.skip(true, 'Service worker not available in Vite dev mode');
     }
+    expect(hasSW).toBe(true);
   });
 
   test('manifest link exists in HTML', async ({ page }) => {

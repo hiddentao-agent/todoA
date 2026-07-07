@@ -1,21 +1,9 @@
 import { test, expect } from '@playwright/test';
+import { setupCleanApp, clickTaskCheckbox, DB_WRITE_DELAY, RELOAD_DELAY } from './helpers';
 
 test.describe('Task CRUD', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/');
-    // Clear IndexedDB for a clean state — must await completion before reload
-    await page.evaluate(
-      () =>
-        new Promise<void>((resolve) => {
-          const req = indexedDB.deleteDatabase('TodoApp');
-          req.onsuccess = () => resolve();
-          req.onerror = () => resolve();
-          req.onblocked = () => resolve();
-        }),
-    );
-    await page.reload();
-    // Wait for app to fully initialize
-    await page.waitForSelector('[aria-label="New task description"]');
+    await setupCleanApp(page);
   });
 
   test('shows empty state on first load', async ({ page }) => {
@@ -54,17 +42,11 @@ test.describe('Task CRUD', () => {
     await input.fill('Buy milk');
     await input.press('Enter');
     // Wait for the task to be written to IndexedDB and rendered
-    await page.waitForTimeout(150);
+    await page.waitForTimeout(DB_WRITE_DELAY);
 
-    // The native checkbox is hidden by custom CSS (opacity:0, width:0, height:0).
-    // Click the visible label wrapper which toggles the checkbox via HTML label behavior.
-    const checkboxLabel = page
-      .locator('label')
-      .filter({ has: page.locator('input[aria-label="Mark \'Buy milk\' complete"]') })
-      .first();
-    await checkboxLabel.click();
+    await clickTaskCheckbox(page, 'Buy milk');
     // Wait for the toggle to persist and re-render
-    await page.waitForTimeout(150);
+    await page.waitForTimeout(DB_WRITE_DELAY);
 
     // Verify completed styling
     const taskItem = page.getByText('Buy milk');
@@ -103,19 +85,15 @@ test.describe('Task CRUD', () => {
     const input = page.getByLabel('New task description');
     await input.fill('Task 1');
     await input.press('Enter');
-    await page.waitForTimeout(150);
+    await page.waitForTimeout(DB_WRITE_DELAY);
     await input.fill('Task 2');
     await input.press('Enter');
-    await page.waitForTimeout(150);
+    await page.waitForTimeout(DB_WRITE_DELAY);
 
     // Complete the first task via the visible label wrapper
-    const cbLabel = page
-      .locator('label')
-      .filter({ has: page.locator('input[aria-label="Mark \'Task 1\' complete"]') })
-      .first();
-    await cbLabel.click();
+    await clickTaskCheckbox(page, 'Task 1');
     // Wait for the toggle to persist to IndexedDB and re-render
-    await page.waitForTimeout(150);
+    await page.waitForTimeout(DB_WRITE_DELAY);
 
     // Clear completed
     await page
@@ -135,14 +113,10 @@ test.describe('Task CRUD', () => {
     const input = page.getByLabel('New task description');
     await input.fill('Task 1');
     await input.press('Enter');
-    await page.waitForTimeout(150);
+    await page.waitForTimeout(DB_WRITE_DELAY);
 
-    const cbLabel = page
-      .locator('label')
-      .filter({ has: page.locator('input[aria-label="Mark \'Task 1\' complete"]') })
-      .first();
-    await cbLabel.click();
-    await page.waitForTimeout(150);
+    await clickTaskCheckbox(page, 'Task 1');
+    await page.waitForTimeout(DB_WRITE_DELAY);
 
     await page.getByRole('button', { name: /Clear completed/ }).click();
 
@@ -168,7 +142,7 @@ test.describe('Task CRUD', () => {
       .waitFor({ state: 'hidden', timeout: 5000 })
       .catch(() => {});
     // Use waitForTimeout as a fallback for the final IndexedDB read + render
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(RELOAD_DELAY);
 
     await expect(page.getByText('Persistent task')).toBeVisible();
   });

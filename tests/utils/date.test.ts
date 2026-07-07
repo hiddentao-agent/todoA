@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { getWeekBounds, formatDueDate, isOverdue } from '@/utils/date';
+import {
+  getWeekBounds,
+  formatDueDate,
+  isOverdue,
+  isValidDateString,
+  getTodayISO,
+} from '@/utils/date';
 
 describe('getWeekBounds', () => {
   it('returns Monday 00:00 to Sunday 23:59 for a given date', () => {
@@ -67,5 +73,46 @@ describe('isOverdue', () => {
     const mm = String(today.getMonth() + 1).padStart(2, '0');
     const dd = String(today.getDate()).padStart(2, '0');
     expect(isOverdue(`${yyyy}-${mm}-${dd}`)).toBe(false);
+  });
+});
+
+describe('isValidDateString', () => {
+  it('returns true for a valid YYYY-MM-DD string', () => {
+    expect(isValidDateString('2026-07-15')).toBe(true);
+    expect(isValidDateString('2026-01-01')).toBe(true);
+    expect(isValidDateString('2026-12-31')).toBe(true);
+  });
+
+  it('returns false for strings not matching YYYY-MM-DD format', () => {
+    expect(isValidDateString('2026-7-15')).toBe(false);
+    expect(isValidDateString('26-07-15')).toBe(false);
+    expect(isValidDateString('2026/07/15')).toBe(false);
+    expect(isValidDateString('2026-07-15T00:00:00')).toBe(false);
+  });
+
+  it('returns false for non-date strings', () => {
+    expect(isValidDateString('not-a-date')).toBe(false);
+    expect(isValidDateString('abcdef-gh-ij')).toBe(false);
+    expect(isValidDateString('')).toBe(false);
+  });
+
+  it('returns false for invalid dates with correct format', () => {
+    expect(isValidDateString('2026-02-30')).toBe(false);
+    expect(isValidDateString('2026-13-01')).toBe(false);
+    expect(isValidDateString('2026-00-01')).toBe(false);
+  });
+});
+
+describe('getTodayISO', () => {
+  it('returns a YYYY-MM-DD string matching today', () => {
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    expect(getTodayISO()).toBe(`${yyyy}-${mm}-${dd}`);
+  });
+
+  it('matches the expected YYYY-MM-DD format', () => {
+    expect(getTodayISO()).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });
 });

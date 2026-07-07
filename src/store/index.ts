@@ -4,6 +4,7 @@ import type { Todo } from '@/db/types';
 import { buildSearchIndex, search } from '@/search';
 import { getWeekBounds } from '@/utils/date';
 import { getNextOrder } from '@/utils/order';
+import { MAX_TASK_LENGTH } from '@/constants';
 import {
   type FilterMode,
   type SortMode,
@@ -121,7 +122,7 @@ export const useTodoStore = create<TodoStore>((set, get) => ({
 
   addTodo: async (text, dueDate) => {
     const trimmed = text.trim();
-    if (!trimmed || trimmed.length > 1000) return undefined;
+    if (!trimmed || trimmed.length > MAX_TASK_LENGTH) return undefined;
 
     const state = get();
     const order = getNextOrder(state.todos);
@@ -152,7 +153,7 @@ export const useTodoStore = create<TodoStore>((set, get) => ({
     const { text } = updates;
     if (text !== undefined) {
       const trimmed = text.trim();
-      if (!trimmed || trimmed.length > 1000) return;
+      if (!trimmed || trimmed.length > MAX_TASK_LENGTH) return;
       updates.text = trimmed;
     }
 

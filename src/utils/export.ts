@@ -1,15 +1,12 @@
 import type { Todo } from '@/db/types';
+import { getTodayISO } from '@/utils/date';
 
 /**
  * Generate the export filename: todo-backup-<YYYY-MM-DD>.json
  * The filename is static and date-only — never incorporates user input or task data.
  */
 export function getExportFilename(): string {
-  const now = new Date();
-  const yyyy = now.getFullYear();
-  const mm = String(now.getMonth() + 1).padStart(2, '0');
-  const dd = String(now.getDate()).padStart(2, '0');
-  return `todo-backup-${yyyy}-${mm}-${dd}.json`;
+  return `todo-backup-${getTodayISO()}.json`;
 }
 
 /** Serialize todos to a JSON string for export. */

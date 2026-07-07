@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { db } from '@/db';
 import type { Todo } from '@/db/types';
 import { buildSearchIndex, search } from '@/search';
-import { getWeekBounds } from '@/utils/date';
+import { getWeekBounds, MIDNIGHT_TIME } from '@/utils/date';
 import { getNextOrder } from '@/utils/order';
 import {
   type FilterMode,
@@ -348,7 +348,7 @@ export function selectFilteredTodos(state: TodoStore): Todo[] {
     const { monday, sunday } = getWeekBounds(new Date());
     result = result.filter((t) => {
       if (!t.dueDate) return false;
-      const d = new Date(t.dueDate + 'T00:00:00');
+      const d = new Date(t.dueDate + MIDNIGHT_TIME);
       return d >= monday && d <= sunday;
     });
   }

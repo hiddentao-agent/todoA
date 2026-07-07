@@ -1,3 +1,6 @@
+/** Midnight time suffix appended to ISO date strings for local-timezone parsing. */
+export const MIDNIGHT_TIME = 'T00:00:00';
+
 /**
  * Get the Monday 00:00:00 and Sunday 23:59:59.999 bounds for the week
  * containing the given date, in the local timezone.
@@ -20,7 +23,7 @@ export function getWeekBounds(date: Date): { monday: Date; sunday: Date } {
 
 /** Format an ISO date string as "Mon DD" (e.g. "Jul 15"). */
 export function formatDueDate(isoDate: string): string {
-  const d = new Date(isoDate + 'T00:00:00');
+  const d = new Date(isoDate + MIDNIGHT_TIME);
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
@@ -28,6 +31,6 @@ export function formatDueDate(isoDate: string): string {
 export function isOverdue(isoDate: string): boolean {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const due = new Date(isoDate + 'T00:00:00');
+  const due = new Date(isoDate + MIDNIGHT_TIME);
   return due < today;
 }

@@ -1,4 +1,5 @@
 import type { Todo } from '@/db/types';
+import { MIDNIGHT_TIME } from '@/utils/date';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
 const MAX_ITEM_COUNT = 50_000;
@@ -38,7 +39,7 @@ function stripPollution(obj: unknown): unknown {
 /** Validate a date string matches YYYY-MM-DD and is a valid date. */
 function isValidDateString(s: string): boolean {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return false;
-  const d = new Date(s + 'T00:00:00');
+  const d = new Date(s + MIDNIGHT_TIME);
   return !isNaN(d.getTime());
 }
 

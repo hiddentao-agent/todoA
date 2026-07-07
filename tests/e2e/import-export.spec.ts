@@ -119,8 +119,10 @@ test.describe('Import & Export', () => {
     const input = page.getByLabel('New task description');
     await input.fill('Task Alpha');
     await input.press('Enter');
+    await page.waitForTimeout(150);
     await input.fill('Task Beta');
     await input.press('Enter');
+    await page.waitForTimeout(150);
 
     // Complete the second task via the visible label wrapper
     const checkboxLabel = page
@@ -128,7 +130,7 @@ test.describe('Import & Export', () => {
       .filter({ has: page.locator('input[aria-label="Mark \'Task Beta\' complete"]') })
       .first();
     await checkboxLabel.click();
-    await page.waitForTimeout(100);
+    await page.waitForTimeout(150);
 
     // Export
     await page.getByLabel('Settings').click();

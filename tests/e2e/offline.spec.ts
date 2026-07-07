@@ -4,8 +4,18 @@ test.describe('Offline', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
     // Clear IndexedDB for a clean state
-    await page.evaluate(() => indexedDB.deleteDatabase('TodoApp'));
+    await page.evaluate(
+      () =>
+        new Promise<void>((resolve) => {
+          const req = indexedDB.deleteDatabase('TodoApp');
+          req.onsuccess = () => resolve();
+          req.onerror = () => resolve();
+          req.onblocked = () => resolve();
+        }),
+    );
     await page.reload();
+    // Wait for app to fully initialize
+    await page.waitForSelector('[aria-label="New task description"]');
   });
 
   test('shows offline banner when network is disconnected', async ({ page }) => {

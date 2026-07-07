@@ -5,16 +5,25 @@ function strToPayload(name: string, content: string, mimeType = 'application/jso
   return {
     name,
     mimeType,
-    // Playwright's FilePayload.buffer is typed as Buffer, but Uint8Array works at runtime.
-    buffer: new TextEncoder().encode(content) as unknown as Buffer,
+    buffer: Buffer.from(content, 'utf-8'),
   };
 }
 
 test.describe('Import & Export', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await page.evaluate(() => indexedDB.deleteDatabase('TodoApp'));
+    await page.evaluate(
+      () =>
+        new Promise<void>((resolve) => {
+          const req = indexedDB.deleteDatabase('TodoApp');
+          req.onsuccess = () => resolve();
+          req.onerror = () => resolve();
+          req.onblocked = () => resolve();
+        }),
+    );
     await page.reload();
+    // Wait for app to fully initialize
+    await page.waitForSelector('[aria-label="New task description"]');
   });
 
   test('export downloads a file with correct naming pattern', async ({ page }) => {
@@ -113,8 +122,13 @@ test.describe('Import & Export', () => {
     await input.fill('Task Beta');
     await input.press('Enter');
 
-    // Complete the second task
-    await page.getByLabel("Mark 'Task Beta' complete").click();
+    // Complete the second task via the visible label wrapper
+    const checkboxLabel = page
+      .locator('label')
+      .filter({ has: page.locator('input[aria-label="Mark \'Task Beta\' complete"]') })
+      .first();
+    await checkboxLabel.click();
+    await page.waitForTimeout(100);
 
     // Export
     await page.getByLabel('Settings').click();

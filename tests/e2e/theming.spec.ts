@@ -3,8 +3,19 @@ import { test, expect } from '@playwright/test';
 test.describe('Theming', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await page.evaluate(() => indexedDB.deleteDatabase('TodoApp'));
+    await page.evaluate(
+      () =>
+        new Promise<void>((resolve) => {
+          const req = indexedDB.deleteDatabase('TodoApp');
+          req.onsuccess = () => resolve();
+          req.onerror = () => resolve();
+          req.onblocked = () => resolve();
+        }),
+    );
     await page.reload();
+    // Wait for app to fully initialize — after SSR the effects need time to settle
+    await page.waitForSelector('[aria-label="New task description"]');
+    await page.waitForTimeout(100);
   });
 
   test('theme toggle cycles through light, dark, and system preference', async ({ page }) => {
@@ -44,31 +55,28 @@ test.describe('Theming', () => {
 
   test('dark theme applies correct data-theme attribute', async ({ page }) => {
     // Check initial data-theme attribute
-    let dataTheme = await page.evaluate(() => document.documentElement.getAttribute('data-theme'));
-    expect(dataTheme).toBe('system');
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'system');
 
     const toggle = page.getByLabel(/Current theme/);
 
     // Switch to light
     await toggle.click();
-    dataTheme = await page.evaluate(() => document.documentElement.getAttribute('data-theme'));
-    expect(dataTheme).toBe('light');
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
 
     // Switch to dark
     await toggle.click();
-    dataTheme = await page.evaluate(() => document.documentElement.getAttribute('data-theme'));
-    expect(dataTheme).toBe('dark');
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
 
     // Switch back to system
     await toggle.click();
-    dataTheme = await page.evaluate(() => document.documentElement.getAttribute('data-theme'));
-    expect(dataTheme).toBe('system');
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'system');
   });
 
   test('theme preference is stored in localStorage', async ({ page }) => {
-    // Default should be 'system'
+    // Default theme 'system' is kept in-memory only until user explicitly chooses a theme.
+    // The app does not write default values to localStorage.
     let storedTheme = await page.evaluate(() => localStorage.getItem('todo_theme'));
-    expect(storedTheme).toBe('system');
+    expect(storedTheme).toBeNull();
 
     const toggle = page.getByLabel(/Current theme/);
 

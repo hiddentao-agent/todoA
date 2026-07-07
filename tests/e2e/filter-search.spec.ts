@@ -3,20 +3,38 @@ import { test, expect } from '@playwright/test';
 test.describe('Filter, Search & Sort', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await page.evaluate(() => indexedDB.deleteDatabase('TodoApp'));
+    await page.evaluate(
+      () =>
+        new Promise<void>((resolve) => {
+          const req = indexedDB.deleteDatabase('TodoApp');
+          req.onsuccess = () => resolve();
+          req.onerror = () => resolve();
+          req.onblocked = () => resolve();
+        }),
+    );
     await page.reload();
+    // Wait for app to fully initialize
+    await page.waitForSelector('[aria-label="New task description"]');
 
     // Add some test tasks
     const input = page.getByLabel('New task description');
     await input.fill('Buy milk');
     await input.press('Enter');
+    await page.waitForTimeout(150);
     await input.fill('Walk the dog');
     await input.press('Enter');
+    await page.waitForTimeout(150);
     await input.fill('Write code');
     await input.press('Enter');
+    await page.waitForTimeout(150);
 
-    // Complete the first task
-    await page.getByLabel("Mark 'Buy milk' complete").click();
+    // Complete the first task via the visible label wrapper
+    const checkboxLabel = page
+      .locator('label')
+      .filter({ has: page.locator('input[aria-label="Mark \'Buy milk\' complete"]') })
+      .first();
+    await checkboxLabel.click();
+    await page.waitForTimeout(100);
   });
 
   test('filter tabs filter tasks correctly', async ({ page }) => {
@@ -64,6 +82,8 @@ test.describe('Filter, Search & Sort', () => {
 
     // Clear by clicking the clear button (✕)
     await page.locator('button[aria-label="Clear search"]').click();
+    // Wait for the search to clear and the list to re-render fully
+    await page.waitForTimeout(500);
 
     await expect(page.getByText('Buy milk')).toBeVisible();
     await expect(page.getByText('Walk the dog')).toBeVisible();

@@ -1,0 +1,60 @@
+/* ========================================
+   AboutDialog — Modal about dialog
+   ======================================== */
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgb(0 0 0 / 40%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--z-modal);
+}
+
+.dialog {
+  background: var(--color-bg);
+  border-radius: var(--radius-md);
+  padding: var(--space-6);
+  max-width: 320px;
+  width: calc(100% - var(--space-8));
+  text-align: center;
+  box-shadow: var(--shadow-lg);
+}
+
+.title {
+  font-size: var(--text-lg);
+  font-weight: 600;
+  margin: 0 0 var(--space-4);
+}
+
+.text {
+  font-size: var(--text-base);
+  color: var(--color-text-secondary);
+  margin: 0 0 var(--space-2);
+}
+
+.version {
+  font-size: var(--text-sm);
+  color: var(--color-text-tertiary);
+  margin-bottom: var(--space-4);
+}
+
+.closeButton {
+  padding: 6px 16px;
+  font-size: var(--text-base);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.closeButton:hover {
+  background: var(--color-border);
+}
+
+.closeButton:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-border-focus);
+  outline-offset: var(--focus-ring-offset);
+}

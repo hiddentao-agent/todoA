@@ -8,7 +8,7 @@ const HTML_TAG_RE = /<[a-zA-Z]/;
 const HTML_ENTITY_RE = /&[#a-zA-Z]/;
 
 /** Keys to strip for prototype pollution prevention. */
-const POLLUTION_KEYS = ['__proto__', 'constructor', 'prototype'];
+const POLLUTION_KEYS: readonly string[] = ['__proto__', 'constructor', 'prototype'];
 
 export interface ImportError {
   message: string;
@@ -16,6 +16,18 @@ export interface ImportError {
 
 export interface ImportSuccess {
   todos: Todo[];
+}
+
+/**
+ * Parse the `completed` field from an imported JSON value.
+ * Handles boolean directly; coerces the *string* values "true" / "false"
+ * explicitly so `Boolean("false")` doesn't incorrectly return `true`.
+ * All other types (numbers, objects, null, etc.) default to `false`.
+ */
+export function parseCompleted(value: unknown): boolean {
+  if (typeof value === 'boolean') return value;
+  if (value === 'true') return true;
+  return false;
 }
 
 /**
@@ -30,7 +42,7 @@ function stripPollution(obj: unknown): unknown {
   }
   const clean: Record<string, unknown> = {};
   for (const key of Object.keys(obj as Record<string, unknown>)) {
-    if ((POLLUTION_KEYS as readonly string[]).includes(key)) continue;
+    if (POLLUTION_KEYS.includes(key)) continue;
     clean[key] = stripPollution((obj as Record<string, unknown>)[key]);
   }
   return clean;
@@ -99,14 +111,7 @@ export function processImportFile(rawText: string): ImportSuccess | ImportError 
 
     // Validate completed — handle string "true"/"false" explicitly so
     // Boolean("false") doesn't coerce to true.
-    const completed =
-      typeof record.completed === 'boolean'
-        ? record.completed
-        : record.completed === 'true'
-          ? true
-          : record.completed === 'false'
-            ? false
-            : false;
+    const completed = parseCompleted(record.completed);
 
     // Validate order
     let order: number;

@@ -1,7 +1,10 @@
+/** Midnight time suffix appended to ISO date strings for local-timezone parsing. */
+export const MIDNIGHT_TIME = 'T00:00:00';
+
 /** Validate a date string matches YYYY-MM-DD and is a valid calendar date. */
 export function isValidDateString(s: string): boolean {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return false;
-  const d = new Date(s + 'T00:00:00');
+  const d = new Date(s + MIDNIGHT_TIME);
   if (isNaN(d.getTime())) return false;
   // Verify the parsed date is the same day as the input — Date()
   // silently rolls over invalid dates like 2026-02-30 → 2026-03-02.
@@ -40,7 +43,7 @@ export function getWeekBounds(date: Date): { monday: Date; sunday: Date } {
 
 /** Format an ISO date string as "Mon DD" (e.g. "Jul 15"). */
 export function formatDueDate(isoDate: string): string {
-  const d = new Date(isoDate + 'T00:00:00');
+  const d = new Date(isoDate + MIDNIGHT_TIME);
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
@@ -48,6 +51,6 @@ export function formatDueDate(isoDate: string): string {
 export function isOverdue(isoDate: string): boolean {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const due = new Date(isoDate + 'T00:00:00');
+  const due = new Date(isoDate + MIDNIGHT_TIME);
   return due < today;
 }

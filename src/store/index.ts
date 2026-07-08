@@ -84,6 +84,23 @@ function readValidatedSort(): SortMode {
 }
 
 /**
+ * Refresh the in-memory todos array from the database and rebuild the search index.
+ * Used after every mutation to keep the UI and search in sync with the DB.
+ *
+ * Accepts optional extraState to merge into set() — used by clearCompleted
+ * (sets undoBuffer), undoClearCompleted (clears undoBuffer), and importTodos
+ * (clears importing flag).
+ */
+async function refreshTodos(
+  set: (partial: Partial<TodoStore>) => void,
+  extraState?: Partial<TodoStore>,
+): Promise<void> {
+  const todos = await db.todos.orderBy('order').toArray();
+  set({ todos, error: null, ...extraState });
+  buildSearchIndex(todos);
+}
+
+/**
  * Swap the order of a todo with its neighbour in the given direction.
  * Shared by moveTodoUp and moveTodoDown to eliminate ~30 lines of duplication.
  */
@@ -173,9 +190,7 @@ export const useTodoStore = create<TodoStore>((set, get) => ({
 
     try {
       const newId = await db.todos.add(todo as Todo);
-      const todos = await db.todos.orderBy('order').toArray();
-      set({ todos, error: null });
-      buildSearchIndex(todos);
+      await refreshTodos(set);
       return newId as number;
     } catch (err) {
       set({
@@ -195,9 +210,7 @@ export const useTodoStore = create<TodoStore>((set, get) => ({
 
     try {
       await db.todos.update(id, updates);
-      const todos = await db.todos.orderBy('order').toArray();
-      set({ todos, error: null });
-      buildSearchIndex(todos);
+      await refreshTodos(set);
     } catch (err) {
       set({
         error: err instanceof Error ? err.message : 'Failed to update task',
@@ -208,9 +221,7 @@ export const useTodoStore = create<TodoStore>((set, get) => ({
   deleteTodo: async (id) => {
     try {
       await db.todos.delete(id);
-      const todos = await db.todos.orderBy('order').toArray();
-      set({ todos, error: null });
-      buildSearchIndex(todos);
+      await refreshTodos(set);
     } catch (err) {
       set({
         error: err instanceof Error ? err.message : 'Failed to delete task',
@@ -223,9 +234,7 @@ export const useTodoStore = create<TodoStore>((set, get) => ({
     if (!todo) return;
     try {
       await db.todos.update(id, { completed: !todo.completed });
-      const todos = await db.todos.orderBy('order').toArray();
-      set({ todos, error: null });
-      buildSearchIndex(todos);
+      await refreshTodos(set);
     } catch (err) {
       set({
         error: err instanceof Error ? err.message : 'Failed to toggle task',
@@ -245,9 +254,7 @@ export const useTodoStore = create<TodoStore>((set, get) => ({
 
     try {
       await db.todos.bulkDelete(completed.map((t) => t.id!));
-      const todos = await db.todos.orderBy('order').toArray();
-      set({ todos, undoBuffer, error: null });
-      buildSearchIndex(todos);
+      await refreshTodos(set, { undoBuffer });
     } catch (err) {
       set({
         error: err instanceof Error ? err.message : 'Failed to clear completed tasks',
@@ -267,9 +274,7 @@ export const useTodoStore = create<TodoStore>((set, get) => ({
     const restored = tasks.map(({ id: _id, ...rest }) => rest as Todo);
     try {
       await db.todos.bulkAdd(restored);
-      const todos = await db.todos.orderBy('order').toArray();
-      set({ todos, undoBuffer: null, error: null });
-      buildSearchIndex(todos);
+      await refreshTodos(set, { undoBuffer: null });
     } catch (err) {
       set({
         error: err instanceof Error ? err.message : 'Failed to undo clear',
@@ -285,15 +290,10 @@ export const useTodoStore = create<TodoStore>((set, get) => ({
     try {
       await db.todos.clear();
       await db.todos.bulkAdd(importedTodos);
-      const todos = await db.todos.orderBy('order').toArray();
-      set({ todos, importing: false });
-      buildSearchIndex(todos);
+      await refreshTodos(set, { importing: false });
     } catch (err) {
-      set({ importing: false });
       // Re-read from DB to restore any remaining state
-      const todos = await db.todos.orderBy('order').toArray();
-      set({ todos });
-      buildSearchIndex(todos);
+      await refreshTodos(set, { importing: false });
       throw err;
     }
   },

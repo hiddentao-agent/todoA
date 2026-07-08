@@ -2,6 +2,7 @@ import { useTodoStore } from '@/store';
 import { useState, useRef, useEffect, useCallback } from 'preact/hooks';
 import { formatDueDate, isOverdue } from '@/utils/date';
 import type { Todo } from '@/db/types';
+import { MAX_TASK_LENGTH, CHAR_WARN_THRESHOLD } from '@/constants';
 import styles from './TaskItem.module.css';
 
 interface TaskItemProps {
@@ -138,7 +139,7 @@ export default function TaskItem({
 
   const handleEditInput = useCallback((e: Event) => {
     const target = e.target as HTMLInputElement;
-    if (target.value.length <= 1000) {
+    if (target.value.length <= MAX_TASK_LENGTH) {
       setEditText(target.value);
     }
   }, []);
@@ -346,13 +347,13 @@ export default function TaskItem({
             onInput={handleEditInput}
             onKeyDown={handleEditKeyDown}
             onBlur={handleSaveEdit}
-            maxLength={1000}
+            maxLength={MAX_TASK_LENGTH}
             disabled={isDisabled}
             aria-label="Edit task"
           />
-          {editText.length > 900 && (
+          {editText.length > CHAR_WARN_THRESHOLD && (
             <span class={styles.charCounter} aria-live="polite">
-              {editText.length}/1000
+              {editText.length}/{MAX_TASK_LENGTH}
             </span>
           )}
         </div>

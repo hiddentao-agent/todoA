@@ -86,4 +86,55 @@ describe('AboutDialog', () => {
     rerender(<AboutDialog open={true} onClose={onClose} />);
     expect(screen.getByRole('dialog', { name: 'About' })).toBeInTheDocument();
   });
+
+  describe('focus trap', () => {
+    it('wraps focus from last to first on Tab key', () => {
+      render(<AboutDialog open={true} onClose={vi.fn()} />);
+      const closeButton = screen.getByRole('button', { name: 'Close' });
+
+      // Close button is focused on mount (only focusable element in the dialog)
+      expect(document.activeElement).toBe(closeButton);
+
+      // Tab when on last (also first) wraps to first
+      fireEvent.keyDown(document, { key: 'Tab', shiftKey: false });
+      expect(document.activeElement).toBe(closeButton);
+    });
+
+    it('wraps focus from first to last on Shift+Tab key', () => {
+      render(<AboutDialog open={true} onClose={vi.fn()} />);
+      const closeButton = screen.getByRole('button', { name: 'Close' });
+
+      expect(document.activeElement).toBe(closeButton);
+
+      // Shift+Tab when on first wraps to last (same element when only one)
+      fireEvent.keyDown(document, { key: 'Tab', shiftKey: true });
+      expect(document.activeElement).toBe(closeButton);
+    });
+
+    it('calls preventDefault when Tab wraps focus', () => {
+      render(<AboutDialog open={true} onClose={vi.fn()} />);
+
+      const event = new KeyboardEvent('keydown', {
+        key: 'Tab',
+        shiftKey: false,
+        bubbles: true,
+        cancelable: true,
+      });
+      document.dispatchEvent(event);
+      expect(event.defaultPrevented).toBe(true);
+    });
+
+    it('calls preventDefault when Shift+Tab wraps focus', () => {
+      render(<AboutDialog open={true} onClose={vi.fn()} />);
+
+      const event = new KeyboardEvent('keydown', {
+        key: 'Tab',
+        shiftKey: true,
+        bubbles: true,
+        cancelable: true,
+      });
+      document.dispatchEvent(event);
+      expect(event.defaultPrevented).toBe(true);
+    });
+  });
 });

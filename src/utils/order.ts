@@ -1,6 +1,6 @@
 import type { Todo } from '@/db/types';
 
-const ORDER_STEP = 1000;
+export const ORDER_STEP = 1000;
 
 /** Assign a default order for a new task at the end of the list. */
 export function getNextOrder(todos: Todo[]): number {

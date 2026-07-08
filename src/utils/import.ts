@@ -1,4 +1,5 @@
 import type { Todo } from '@/db/types';
+import { ORDER_STEP } from '@/utils/order';
 import { isValidDateString } from '@/utils/date';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
@@ -118,7 +119,7 @@ export function processImportFile(rawText: string): ImportSuccess | ImportError 
     if (typeof record.order === 'number' && isFinite(record.order)) {
       order = record.order;
     } else {
-      order = (i + 1) * 1000;
+      order = (i + 1) * ORDER_STEP;
     }
 
     // Validate dueDate

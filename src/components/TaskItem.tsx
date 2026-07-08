@@ -2,6 +2,7 @@ import { useTodoStore } from '@/store';
 import { useState, useRef, useEffect, useCallback } from 'preact/hooks';
 import { formatDueDate, isOverdue } from '@/utils/date';
 import type { Todo } from '@/db/types';
+import { useSessionBackup } from '@/hooks/useSessionBackup';
 import styles from './TaskItem.module.css';
 
 interface TaskItemProps {
@@ -47,6 +48,7 @@ export default function TaskItem({
   const { updateTodo, deleteTodo, toggleTodo } = store;
 
   const sessionEditKey = todo.id !== undefined ? `todo-edit-${todo.id}` : null;
+  const backup = useSessionBackup(sessionEditKey);
 
   // Restore in-progress edit from sessionStorage on mount (spec §7.3 SW mid-edit safety net)
   useEffect(() => {
@@ -80,14 +82,8 @@ export default function TaskItem({
     setEditText(todo.text);
     setEditing(true);
     // Save to sessionStorage as safety net for SW-triggered reload
-    if (sessionEditKey) {
-      try {
-        sessionStorage.setItem(sessionEditKey, todo.text);
-      } catch {
-        // sessionStorage unavailable
-      }
-    }
-  }, [isDisabled, todo.text, sessionEditKey]);
+    backup.save(todo.text);
+  }, [isDisabled, todo.text, backup]);
 
   const handleSaveEdit = useCallback(() => {
     const trimmed = editText.trim();
@@ -98,27 +94,15 @@ export default function TaskItem({
     }
     setEditing(false);
     // Clear sessionStorage safety net
-    if (sessionEditKey) {
-      try {
-        sessionStorage.removeItem(sessionEditKey);
-      } catch {
-        // sessionStorage unavailable
-      }
-    }
-  }, [editText, todo, updateTodo, sessionEditKey]);
+    backup.clear();
+  }, [editText, todo, updateTodo, backup]);
 
   const cancelEdit = useCallback(() => {
     setEditing(false);
     setEditText(todo.text);
     // Clear sessionStorage safety net
-    if (sessionEditKey) {
-      try {
-        sessionStorage.removeItem(sessionEditKey);
-      } catch {
-        // sessionStorage unavailable
-      }
-    }
-  }, [todo.text, sessionEditKey]);
+    backup.clear();
+  }, [todo.text, backup]);
 
   // Focus and select all text when entering edit mode
   useEffect(() => {

@@ -1,5 +1,16 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { useTodoStore, selectFilteredTodos, selectTaskCounts } from '@/store';
+import {
+  useTodoStore,
+  selectFilteredTodos,
+  selectTaskCounts,
+  readValidatedFromStorage,
+} from '@/store';
+import {
+  ALLOWED_THEME_VALUES,
+  ALLOWED_SORT_VALUES,
+  DEFAULT_THEME,
+  DEFAULT_SORT,
+} from '@/store/types';
 import { buildSearchIndex } from '@/search';
 import type { Todo } from '@/db/types';
 
@@ -54,6 +65,99 @@ vi.mock('@/db', () => ({
     },
   },
 }));
+
+describe('readValidatedFromStorage', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    vi.clearAllMocks();
+  });
+
+  it('returns the value from localStorage when valid', () => {
+    localStorage.setItem('test_key', 'dark');
+    const result = readValidatedFromStorage('test_key', ['light', 'dark', 'system'], 'system');
+    expect(result).toBe('dark');
+  });
+
+  it('returns default when key does not exist', () => {
+    const result = readValidatedFromStorage('missing_key', ['a', 'b'], 'a');
+    expect(result).toBe('a');
+  });
+
+  it('returns default when value is not in allowed list', () => {
+    localStorage.setItem('test_key', 'invalid');
+    const result = readValidatedFromStorage('test_key', ['valid'], 'valid');
+    expect(result).toBe('valid');
+  });
+
+  it('overwrites invalid value in localStorage when overwriteInvalid is true', () => {
+    localStorage.setItem('test_key', 'invalid');
+    readValidatedFromStorage('test_key', ['valid'], 'valid', true);
+    expect(localStorage.setItem).toHaveBeenCalledWith('test_key', 'valid');
+  });
+
+  it('does NOT overwrite invalid value when overwriteInvalid is false', () => {
+    localStorage.setItem('test_key', 'invalid');
+    readValidatedFromStorage('test_key', ['valid'], 'valid', false);
+    expect(localStorage.setItem).not.toHaveBeenCalledWith('test_key', 'valid');
+  });
+
+  it('does NOT overwrite invalid value when overwriteInvalid is omitted', () => {
+    localStorage.setItem('test_key', 'invalid');
+    readValidatedFromStorage('test_key', ['valid'], 'valid');
+    expect(localStorage.setItem).not.toHaveBeenCalledWith('test_key', 'valid');
+  });
+
+  it('does NOT overwrite when value is valid even with overwriteInvalid=true', () => {
+    localStorage.setItem('test_key', 'valid');
+    vi.clearAllMocks();
+    readValidatedFromStorage('test_key', ['valid'], 'valid', true);
+    // setItem should not be called since the value was valid
+    expect(localStorage.setItem).not.toHaveBeenCalled();
+  });
+
+  it('returns default when localStorage.getItem throws', () => {
+    (localStorage.getItem as ReturnType<typeof vi.fn>).mockImplementationOnce(() => {
+      throw new Error('quota exceeded');
+    });
+    const result = readValidatedFromStorage('test_key', ['valid'], 'valid');
+    expect(result).toBe('valid');
+  });
+
+  it('returns default and does not crash when localStorage.setItem throws with overwriteInvalid=true', () => {
+    localStorage.setItem('test_key', 'invalid');
+    (localStorage.setItem as ReturnType<typeof vi.fn>).mockImplementationOnce(() => {
+      throw new Error('quota exceeded');
+    });
+    const result = readValidatedFromStorage('test_key', ['valid'], 'valid', true);
+    expect(result).toBe('valid');
+  });
+
+  it('works with SortMode values', () => {
+    localStorage.setItem('todo_sort', 'dueDateAsc');
+    const result = readValidatedFromStorage('todo_sort', ALLOWED_SORT_VALUES, DEFAULT_SORT, true);
+    expect(result).toBe('dueDateAsc');
+  });
+
+  it('works with ThemePreference values', () => {
+    localStorage.setItem('todo_theme', 'dark');
+    const result = readValidatedFromStorage('todo_theme', ALLOWED_THEME_VALUES, DEFAULT_THEME);
+    expect(result).toBe('dark');
+  });
+
+  it('overwrites invalid sort value in localStorage', () => {
+    localStorage.setItem('todo_sort', 'bogus');
+    const result = readValidatedFromStorage('todo_sort', ALLOWED_SORT_VALUES, DEFAULT_SORT, true);
+    expect(result).toBe(DEFAULT_SORT);
+    expect(localStorage.setItem).toHaveBeenCalledWith('todo_sort', DEFAULT_SORT);
+  });
+
+  it('does NOT overwrite invalid theme value in localStorage', () => {
+    localStorage.setItem('todo_theme', 'bogus');
+    const result = readValidatedFromStorage('todo_theme', ALLOWED_THEME_VALUES, DEFAULT_THEME);
+    expect(result).toBe(DEFAULT_THEME);
+    expect(localStorage.setItem).not.toHaveBeenCalledWith('todo_theme', DEFAULT_THEME);
+  });
+});
 
 describe('TodoStore', () => {
   beforeEach(() => {

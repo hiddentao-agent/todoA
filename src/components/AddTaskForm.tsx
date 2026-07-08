@@ -1,13 +1,11 @@
 import { useTodoStore } from '@/store';
 import { useRef, useState, useEffect } from 'preact/hooks';
+import { MAX_TASK_LENGTH, CHAR_WARN_THRESHOLD } from '@/constants';
 import styles from './AddTaskForm.module.css';
 
 interface AddTaskFormProps {
   disabled?: boolean;
 }
-
-const MAX_LENGTH = 1000;
-const CHAR_WARN_THRESHOLD = 900;
 
 export function AddTaskForm({ disabled }: AddTaskFormProps) {
   const addTodo = useTodoStore((s) => s.addTodo);
@@ -19,7 +17,7 @@ export function AddTaskForm({ disabled }: AddTaskFormProps) {
   const [validationError, setValidationError] = useState<string | null>(null);
 
   const isDisabled = disabled || importing;
-  const charsRemaining = MAX_LENGTH - text.length;
+  const charsRemaining = MAX_TASK_LENGTH - text.length;
 
   // Auto-focus the task input on mount (replaces autoFocus attribute for a11y)
   useEffect(() => {
@@ -44,8 +42,8 @@ export function AddTaskForm({ disabled }: AddTaskFormProps) {
       return;
     }
 
-    if (trimmed.length > MAX_LENGTH) {
-      setValidationError('Task must be 1000 characters or fewer.');
+    if (trimmed.length > MAX_TASK_LENGTH) {
+      setValidationError(`Task must be ${MAX_TASK_LENGTH} characters or fewer.`);
       return;
     }
 

@@ -2,6 +2,10 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { buildSearchIndex, search } from '@/search';
 import type { Todo } from '@/db/types';
 
+function mkTodo(id: number, text: string, overrides?: Partial<Todo>): Todo {
+  return { id, text, completed: false, order: 1000, dueDate: null, createdAt: 0, ...overrides };
+}
+
 // Module-level test (no beforeEach) to cover the !index guard
 it('returns empty results when no search index has been built', () => {
   const results = search('test');
@@ -19,9 +23,7 @@ describe('search', () => {
   });
 
   it('returns empty results for empty query', () => {
-    const todos: Todo[] = [
-      { id: 1, text: 'Buy groceries', completed: false, order: 1000, dueDate: null, createdAt: 0 },
-    ];
+    const todos: Todo[] = [mkTodo(1, 'Buy groceries')];
     buildSearchIndex(todos);
 
     const results = search('');
@@ -29,9 +31,7 @@ describe('search', () => {
   });
 
   it('returns empty results for whitespace-only query', () => {
-    const todos: Todo[] = [
-      { id: 1, text: 'Buy groceries', completed: false, order: 1000, dueDate: null, createdAt: 0 },
-    ];
+    const todos: Todo[] = [mkTodo(1, 'Buy groceries')];
     buildSearchIndex(todos);
 
     const results = search('   ');
@@ -39,10 +39,7 @@ describe('search', () => {
   });
 
   it('finds tasks by exact text match', () => {
-    const todos: Todo[] = [
-      { id: 1, text: 'Buy groceries', completed: false, order: 1000, dueDate: null, createdAt: 0 },
-      { id: 2, text: 'Walk the dog', completed: false, order: 2000, dueDate: null, createdAt: 0 },
-    ];
+    const todos: Todo[] = [mkTodo(1, 'Buy groceries'), mkTodo(2, 'Walk the dog', { order: 2000 })];
     buildSearchIndex(todos);
 
     const results = search('groceries');
@@ -51,16 +48,7 @@ describe('search', () => {
   });
 
   it('finds tasks using stemming (morphological matching)', () => {
-    const todos: Todo[] = [
-      {
-        id: 1,
-        text: 'Running errands',
-        completed: false,
-        order: 1000,
-        dueDate: null,
-        createdAt: 0,
-      },
-    ];
+    const todos: Todo[] = [mkTodo(1, 'Running errands')];
     buildSearchIndex(todos);
 
     // lunr stemmer reduces "running" to "run" so searching "run" finds "running"
@@ -71,9 +59,9 @@ describe('search', () => {
 
   it('returns multiple matches', () => {
     const todos: Todo[] = [
-      { id: 1, text: 'Buy milk', completed: false, order: 1000, dueDate: null, createdAt: 0 },
-      { id: 2, text: 'Buy bread', completed: false, order: 2000, dueDate: null, createdAt: 0 },
-      { id: 3, text: 'Walk dog', completed: false, order: 3000, dueDate: null, createdAt: 0 },
+      mkTodo(1, 'Buy milk'),
+      mkTodo(2, 'Buy bread', { order: 2000 }),
+      mkTodo(3, 'Walk dog', { order: 3000 }),
     ];
     buildSearchIndex(todos);
 
@@ -82,14 +70,10 @@ describe('search', () => {
   });
 
   it('rebuilds index when buildSearchIndex is called again', () => {
-    const todos1: Todo[] = [
-      { id: 1, text: 'First set', completed: false, order: 1000, dueDate: null, createdAt: 0 },
-    ];
+    const todos1: Todo[] = [mkTodo(1, 'First set')];
     buildSearchIndex(todos1);
 
-    const todos2: Todo[] = [
-      { id: 2, text: 'Second set', completed: false, order: 1000, dueDate: null, createdAt: 0 },
-    ];
+    const todos2: Todo[] = [mkTodo(2, 'Second set')];
     buildSearchIndex(todos2);
 
     const results = search('First');
@@ -100,9 +84,7 @@ describe('search', () => {
   });
 
   it('is case insensitive', () => {
-    const todos: Todo[] = [
-      { id: 1, text: 'GROCERIES', completed: false, order: 1000, dueDate: null, createdAt: 0 },
-    ];
+    const todos: Todo[] = [mkTodo(1, 'GROCERIES')];
     buildSearchIndex(todos);
 
     const results = search('groceries');

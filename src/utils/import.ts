@@ -1,4 +1,5 @@
 import type { Todo } from '@/db/types';
+import { isValidDateString } from '@/utils/date';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
 const MAX_ITEM_COUNT = 50_000;
@@ -7,7 +8,7 @@ const HTML_TAG_RE = /<[a-zA-Z]/;
 const HTML_ENTITY_RE = /&[#a-zA-Z]/;
 
 /** Keys to strip for prototype pollution prevention. */
-const POLLUTION_KEYS = ['__proto__', 'constructor', 'prototype'];
+const POLLUTION_KEYS: readonly string[] = ['__proto__', 'constructor', 'prototype'];
 
 export interface ImportError {
   message: string;
@@ -15,6 +16,18 @@ export interface ImportError {
 
 export interface ImportSuccess {
   todos: Todo[];
+}
+
+/**
+ * Parse the `completed` field from an imported JSON value.
+ * Handles boolean directly; coerces the *string* values "true" / "false"
+ * explicitly so `Boolean("false")` doesn't incorrectly return `true`.
+ * All other types (numbers, objects, null, etc.) default to `false`.
+ */
+export function parseCompleted(value: unknown): boolean {
+  if (typeof value === 'boolean') return value;
+  if (value === 'true') return true;
+  return false;
 }
 
 /**
@@ -29,17 +42,10 @@ function stripPollution(obj: unknown): unknown {
   }
   const clean: Record<string, unknown> = {};
   for (const key of Object.keys(obj as Record<string, unknown>)) {
-    if ((POLLUTION_KEYS as readonly string[]).includes(key)) continue;
+    if (POLLUTION_KEYS.includes(key)) continue;
     clean[key] = stripPollution((obj as Record<string, unknown>)[key]);
   }
   return clean;
-}
-
-/** Validate a date string matches YYYY-MM-DD and is a valid date. */
-function isValidDateString(s: string): boolean {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return false;
-  const d = new Date(s + 'T00:00:00');
-  return !isNaN(d.getTime());
 }
 
 /**
@@ -105,14 +111,7 @@ export function processImportFile(rawText: string): ImportSuccess | ImportError 
 
     // Validate completed — handle string "true"/"false" explicitly so
     // Boolean("false") doesn't coerce to true.
-    const completed =
-      typeof record.completed === 'boolean'
-        ? record.completed
-        : record.completed === 'true'
-          ? true
-          : record.completed === 'false'
-            ? false
-            : false;
+    const completed = parseCompleted(record.completed);
 
     // Validate order
     let order: number;
@@ -154,7 +153,8 @@ export function processImportFile(rawText: string): ImportSuccess | ImportError 
 /** Validate file size before reading. */
 export function validateFileSize(file: File): ImportError | null {
   if (file.size > MAX_FILE_SIZE) {
-    return { message: 'File too large. Maximum size is 5 MB.' };
+    const sizeMB = MAX_FILE_SIZE / (1024 * 1024);
+    return { message: `File too large. Maximum size is ${sizeMB} MB.` };
   }
   return null;
 }

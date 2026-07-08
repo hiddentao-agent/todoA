@@ -4,6 +4,7 @@ import type { Todo } from '@/db/types';
 import { buildSearchIndex, search } from '@/search';
 import { getWeekBounds } from '@/utils/date';
 import { getNextOrder } from '@/utils/order';
+import { MAX_TASK_LENGTH } from '@/constants';
 import {
   type FilterMode,
   type SortMode,
@@ -83,6 +84,43 @@ function readValidatedSort(): SortMode {
   return DEFAULT_SORT;
 }
 
+/**
+ * Swap the order of a todo with its neighbour in the given direction.
+ * Shared by moveTodoUp and moveTodoDown to eliminate ~30 lines of duplication.
+ */
+async function swapTodoOrder(
+  get: () => TodoStore,
+  set: (partial: Partial<TodoStore> | ((state: TodoStore) => Partial<TodoStore>)) => void,
+  id: number,
+  direction: 'up' | 'down',
+): Promise<void> {
+  const state = get();
+  const sorted = [...state.todos].sort((a, b) => a.order - b.order);
+  const idx = sorted.findIndex((t) => t.id === id);
+  if (idx < 0) return;
+
+  const offset = direction === 'up' ? -1 : 1;
+  if (idx + offset < 0 || idx + offset >= sorted.length) return;
+
+  const neighbor = sorted[idx + offset];
+  const current = sorted[idx];
+  // Swap orders
+  try {
+    await db.todos.update(neighbor.id!, { order: current.order });
+    await db.todos.update(current.id!, { order: neighbor.order });
+    const todos = await db.todos.orderBy('order').toArray();
+    set({ todos, error: null });
+    // Switch back to manual sort when manually reordering
+    if (state.sortMode !== 'manual') {
+      get().setSortMode('manual');
+    }
+  } catch (err) {
+    set({
+      error: err instanceof Error ? err.message : `Failed to move task ${direction}`,
+    });
+  }
+}
+
 export const useTodoStore = create<TodoStore>((set, get) => ({
   // Data
   todos: [],
@@ -121,7 +159,7 @@ export const useTodoStore = create<TodoStore>((set, get) => ({
 
   addTodo: async (text, dueDate) => {
     const trimmed = text.trim();
-    if (!trimmed || trimmed.length > 1000) return undefined;
+    if (!trimmed || trimmed.length > MAX_TASK_LENGTH) return undefined;
 
     const state = get();
     const order = getNextOrder(state.todos);
@@ -152,7 +190,7 @@ export const useTodoStore = create<TodoStore>((set, get) => ({
     const { text } = updates;
     if (text !== undefined) {
       const trimmed = text.trim();
-      if (!trimmed || trimmed.length > 1000) return;
+      if (!trimmed || trimmed.length > MAX_TASK_LENGTH) return;
       updates.text = trimmed;
     }
 
@@ -240,55 +278,8 @@ export const useTodoStore = create<TodoStore>((set, get) => ({
     }
   },
 
-  moveTodoUp: async (id: number) => {
-    const state = get();
-    const sorted = [...state.todos].sort((a, b) => a.order - b.order);
-    const idx = sorted.findIndex((t) => t.id === id);
-    if (idx <= 0) return;
-
-    const prev = sorted[idx - 1];
-    const current = sorted[idx];
-    // Swap orders
-    try {
-      await db.todos.update(prev.id!, { order: current.order });
-      await db.todos.update(current.id!, { order: prev.order });
-      const todos = await db.todos.orderBy('order').toArray();
-      set({ todos, error: null });
-      // Switch back to manual sort when manually reordering
-      if (state.sortMode !== 'manual') {
-        get().setSortMode('manual');
-      }
-    } catch (err) {
-      set({
-        error: err instanceof Error ? err.message : 'Failed to move task up',
-      });
-    }
-  },
-
-  moveTodoDown: async (id: number) => {
-    const state = get();
-    const sorted = [...state.todos].sort((a, b) => a.order - b.order);
-    const idx = sorted.findIndex((t) => t.id === id);
-    if (idx < 0 || idx >= sorted.length - 1) return;
-
-    const next = sorted[idx + 1];
-    const current = sorted[idx];
-    // Swap orders
-    try {
-      await db.todos.update(next.id!, { order: current.order });
-      await db.todos.update(current.id!, { order: next.order });
-      const todos = await db.todos.orderBy('order').toArray();
-      set({ todos, error: null });
-      // Switch back to manual sort when manually reordering
-      if (state.sortMode !== 'manual') {
-        get().setSortMode('manual');
-      }
-    } catch (err) {
-      set({
-        error: err instanceof Error ? err.message : 'Failed to move task down',
-      });
-    }
-  },
+  moveTodoUp: (id) => swapTodoOrder(get, set, id, 'up'),
+  moveTodoDown: (id) => swapTodoOrder(get, set, id, 'down'),
 
   importTodos: async (importedTodos) => {
     set({ importing: true });

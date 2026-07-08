@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { processImportFile, validateFileSize } from '@/utils/import';
+import { parseCompleted, processImportFile, validateFileSize } from '@/utils/import';
 
 describe('processImportFile', () => {
   it('accepts valid JSON with all required fields', () => {
@@ -199,6 +199,45 @@ describe('processImportFile', () => {
       expect(result.todos[0].order).toBe(1000);
       expect(result.todos[1].order).toBe(2000);
     }
+  });
+});
+
+describe('parseCompleted', () => {
+  it('returns true for boolean true', () => {
+    expect(parseCompleted(true)).toBe(true);
+  });
+
+  it('returns false for boolean false', () => {
+    expect(parseCompleted(false)).toBe(false);
+  });
+
+  it('returns true for string "true"', () => {
+    expect(parseCompleted('true')).toBe(true);
+  });
+
+  it('returns false for string "false"', () => {
+    expect(parseCompleted('false')).toBe(false);
+  });
+
+  it('returns false for other strings', () => {
+    expect(parseCompleted('yes')).toBe(false);
+    expect(parseCompleted('no')).toBe(false);
+    expect(parseCompleted('')).toBe(false);
+  });
+
+  it('returns false for numbers', () => {
+    expect(parseCompleted(1)).toBe(false);
+    expect(parseCompleted(0)).toBe(false);
+  });
+
+  it('returns false for objects and arrays', () => {
+    expect(parseCompleted({})).toBe(false);
+    expect(parseCompleted([])).toBe(false);
+  });
+
+  it('returns false for null and undefined', () => {
+    expect(parseCompleted(null)).toBe(false);
+    expect(parseCompleted(undefined)).toBe(false);
   });
 });
 

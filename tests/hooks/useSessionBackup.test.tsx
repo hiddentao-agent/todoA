@@ -102,10 +102,9 @@ describe('useSessionBackup', () => {
   });
 
   it('returns new callbacks when key changes', () => {
-    const { result, rerender } = renderHook(
-      ({ key }) => useSessionBackup(key),
-      { initialProps: { key: 'key-a' as string | null } },
-    );
+    const { result, rerender } = renderHook(({ key }) => useSessionBackup(key), {
+      initialProps: { key: 'key-a' as string | null },
+    });
 
     const { save: saveA, clear: clearA } = result.current;
 
@@ -118,10 +117,9 @@ describe('useSessionBackup', () => {
   });
 
   it('new save callback targets the updated key', () => {
-    const { result, rerender } = renderHook(
-      ({ key }) => useSessionBackup(key),
-      { initialProps: { key: 'key-a' as string | null } },
-    );
+    const { result, rerender } = renderHook(({ key }) => useSessionBackup(key), {
+      initialProps: { key: 'key-a' as string | null },
+    });
 
     rerender({ key: 'key-b' });
 

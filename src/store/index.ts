@@ -13,6 +13,8 @@ import {
   ALLOWED_THEME_VALUES,
   DEFAULT_SORT,
   DEFAULT_THEME,
+  SORT_STORAGE_KEY,
+  THEME_STORAGE_KEY,
 } from './types';
 
 export interface TodoStore {
@@ -59,7 +61,7 @@ export interface TodoStore {
 
 function readValidatedTheme(): ThemePreference {
   try {
-    const raw = localStorage.getItem('todo_theme');
+    const raw = localStorage.getItem(THEME_STORAGE_KEY);
     if (raw && (ALLOWED_THEME_VALUES as readonly string[]).includes(raw)) {
       return raw as ThemePreference;
     }
@@ -71,12 +73,12 @@ function readValidatedTheme(): ThemePreference {
 
 function readValidatedSort(): SortMode {
   try {
-    const raw = localStorage.getItem('todo_sort');
+    const raw = localStorage.getItem(SORT_STORAGE_KEY);
     if (raw && (ALLOWED_SORT_VALUES as readonly string[]).includes(raw)) {
       return raw as SortMode;
     }
     // Overwrite invalid value
-    if (raw) localStorage.setItem('todo_sort', DEFAULT_SORT);
+    if (raw) localStorage.setItem(SORT_STORAGE_KEY, DEFAULT_SORT);
   } catch {
     // localStorage unavailable
   }
@@ -302,7 +304,7 @@ export const useTodoStore = create<TodoStore>((set, get) => ({
   setFilter: (filter) => set({ filter }),
   setSortMode: (mode) => {
     try {
-      localStorage.setItem('todo_sort', mode);
+      localStorage.setItem(SORT_STORAGE_KEY, mode);
     } catch {
       // localStorage unavailable — state change is still applied
     }
@@ -313,7 +315,7 @@ export const useTodoStore = create<TodoStore>((set, get) => ({
   setImporting: (value) => set({ importing: value }),
   setTheme: (theme) => {
     try {
-      localStorage.setItem('todo_theme', theme);
+      localStorage.setItem(THEME_STORAGE_KEY, theme);
     } catch {
       // localStorage unavailable
     }

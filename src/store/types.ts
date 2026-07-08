@@ -21,5 +21,8 @@ export const ALLOWED_SORT_VALUES: readonly SortMode[] = [
   'dueDateDesc',
 ] as const;
 
+export const THEME_STORAGE_KEY = 'todo_theme';
+export const SORT_STORAGE_KEY = 'todo_sort';
+
 export const DEFAULT_THEME: ThemePreference = 'system';
 export const DEFAULT_SORT: SortMode = 'manual';

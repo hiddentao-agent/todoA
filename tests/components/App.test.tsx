@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/preact';
 import { axe } from 'vitest-axe';
 import { App } from '@/App';
+import type { Todo } from '@/db/types';
 
 // ---------- Mocks ----------
 
@@ -14,16 +15,7 @@ const mockMoveTodoUp = vi.fn();
 const mockMoveTodoDown = vi.fn();
 const mockUndoClearCompleted = vi.fn();
 
-interface FakeTodo {
-  id: number;
-  text: string;
-  completed: boolean;
-  order: number;
-  dueDate: string | null;
-  createdAt: number;
-}
-
-let mockTodos: FakeTodo[] = [];
+let mockTodos: Todo[] = [];
 let mockLoading = true;
 let mockError: string | null = null;
 let mockFilter = 'all' as string;
@@ -31,7 +23,7 @@ let mockSearchQuery = '';
 let mockDueThisWeek = false;
 let mockSortMode = 'manual';
 let mockTheme = 'system';
-let mockUndoBuffer: { tasks: FakeTodo[]; expiresAt: number } | null = null;
+let mockUndoBuffer: { tasks: Todo[]; expiresAt: number } | null = null;
 
 vi.mock('@/store', () => ({
   useTodoStore: (selector?: (state: Record<string, unknown>) => unknown) => {
@@ -60,7 +52,7 @@ vi.mock('@/store', () => ({
     return selector ? selector(state) : state;
   },
   selectFilteredTodos: (state: Record<string, unknown>) => {
-    const todos = state.todos as FakeTodo[];
+    const todos = state.todos as Todo[];
     const filter = state.filter as string;
     // Apply filter logic matching the real store
     if (filter === 'active') return todos.filter((t) => !t.completed);
@@ -68,7 +60,7 @@ vi.mock('@/store', () => ({
     return todos;
   },
   selectTaskCounts: (state: Record<string, unknown>) => {
-    const todos = state.todos as FakeTodo[];
+    const todos = state.todos as Todo[];
     const total = todos.length;
     const active = todos.filter((t) => !t.completed).length;
     return { total, active, completed: total - active };

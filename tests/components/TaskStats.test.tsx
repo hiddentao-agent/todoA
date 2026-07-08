@@ -2,12 +2,9 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/preact';
 import { axe } from 'vitest-axe';
 import { TaskStats } from '@/components/TaskStats';
+import type { Todo } from '@/db/types';
 
-interface FakeTodo {
-  id: number;
-  text: string;
-  completed: boolean;
-}
+type FakeTodo = Pick<Todo, 'id' | 'text' | 'completed'>;
 
 let mockTodos: FakeTodo[] = [];
 

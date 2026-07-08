@@ -148,7 +148,8 @@ export function processImportFile(rawText: string): ImportSuccess | ImportError 
 /** Validate file size before reading. */
 export function validateFileSize(file: File): ImportError | null {
   if (file.size > MAX_FILE_SIZE) {
-    return { message: 'File too large. Maximum size is 5 MB.' };
+    const sizeMB = MAX_FILE_SIZE / (1024 * 1024);
+    return { message: `File too large. Maximum size is ${sizeMB} MB.` };
   }
   return null;
 }

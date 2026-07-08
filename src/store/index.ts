@@ -57,30 +57,24 @@ export interface TodoStore {
   setTheme: (theme: ThemePreference) => void;
 }
 
-function readValidatedTheme(): ThemePreference {
+export function readValidatedFromStorage<T extends string>(
+  key: string,
+  allowed: readonly string[],
+  defaultValue: T,
+  overwriteInvalid?: boolean,
+): T {
   try {
-    const raw = localStorage.getItem('todo_theme');
-    if (raw && (ALLOWED_THEME_VALUES as readonly string[]).includes(raw)) {
-      return raw as ThemePreference;
+    const raw = localStorage.getItem(key);
+    if (raw && allowed.includes(raw)) {
+      return raw as T;
+    }
+    if (raw && overwriteInvalid) {
+      localStorage.setItem(key, defaultValue);
     }
   } catch {
     // localStorage unavailable
   }
-  return DEFAULT_THEME;
-}
-
-function readValidatedSort(): SortMode {
-  try {
-    const raw = localStorage.getItem('todo_sort');
-    if (raw && (ALLOWED_SORT_VALUES as readonly string[]).includes(raw)) {
-      return raw as SortMode;
-    }
-    // Overwrite invalid value
-    if (raw) localStorage.setItem('todo_sort', DEFAULT_SORT);
-  } catch {
-    // localStorage unavailable
-  }
-  return DEFAULT_SORT;
+  return defaultValue;
 }
 
 /**
@@ -128,7 +122,7 @@ export const useTodoStore = create<TodoStore>((set, get) => ({
 
   // UI state
   filter: 'all',
-  sortMode: readValidatedSort(),
+  sortMode: readValidatedFromStorage('todo_sort', ALLOWED_SORT_VALUES, DEFAULT_SORT, true),
   searchQuery: '',
   dueThisWeek: false,
 
@@ -139,7 +133,7 @@ export const useTodoStore = create<TodoStore>((set, get) => ({
   undoBuffer: null,
 
   // Theme
-  theme: readValidatedTheme(),
+  theme: readValidatedFromStorage('todo_theme', ALLOWED_THEME_VALUES, DEFAULT_THEME),
 
   // Actions
   loadTodos: async () => {
